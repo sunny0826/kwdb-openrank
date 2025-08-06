@@ -1,57 +1,201 @@
-# React + TypeScript + Vite
+# OpenRank 洞察平台
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一个基于 React + TypeScript 构建的开源项目数据分析平台，专注于 OpenRank 指标的可视化展示和深度分析。
 
-Currently, two official plugins are available:
+## 🌟 功能特性
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 📊 多维度数据分析
+- **OpenRank 指标**：展示项目的 OpenRank 评分趋势
+- **活跃度分析**：统计项目的活跃度变化
+- **参与者统计**：分析项目贡献者数量和参与情况
+- **开发者指标**：新贡献者、活跃贡献者、非活跃贡献者等
+- **Issue 分析**：新建、关闭 Issue 数量及响应时间
+- **变更请求**：PR 数量、接受率、审查情况等
 
-## Expanding the ESLint configuration
+### 🎯 灵活的时间维度
+- **范围视图**：月度、季度、年度数据聚合
+- **特定时间**：精确到具体月份的数据查看
+- **智能聚合**：根据选择的时间范围自动聚合数据
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 📈 丰富的可视化
+- **多种图表类型**：折线图、柱状图、面积图
+- **交互式图表**：支持缩放、悬停提示、图例切换
+- **表格视图**：详细的数据表格展示
+- **响应式设计**：适配不同屏幕尺寸
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### 🔍 项目对比功能
+- **多项目对比**：同时分析多个项目的指标
+- **动态添加**：支持搜索和动态添加对比项目
+- **实时刷新**：一键刷新所有项目数据
+
+## 🛠️ 技术栈
+
+### 前端框架
+- **React 18** - 现代化的用户界面库
+- **TypeScript** - 类型安全的 JavaScript 超集
+- **Vite** - 快速的构建工具和开发服务器
+
+### UI 组件
+- **Tailwind CSS** - 实用优先的 CSS 框架
+- **Recharts** - 基于 React 的图表库
+- **Lucide React** - 美观的图标库
+
+### 状态管理
+- **React Hooks** - 内置的状态管理
+- **Custom Hooks** - 封装的业务逻辑钩子
+
+### 开发工具
+- **ESLint** - 代码质量检查
+- **PostCSS** - CSS 后处理器
+- **pnpm** - 高效的包管理器
+
+## 🚀 快速开始
+
+### 环境要求
+- Node.js >= 16.0.0
+- pnpm >= 7.0.0
+
+### 安装依赖
+```bash
+# 克隆项目
+git clone https://github.com/sunny0826/kwdb-openrank
+cd openrank-insight
+
+# 安装依赖
+pnpm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 开发环境
+```bash
+# 启动开发服务器
+pnpm dev
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  extends: [
-    // other configs...
-    // Enable lint rules for React
-    reactX.configs['recommended-typescript'],
-    // Enable lint rules for React DOM
-    reactDom.configs.recommended,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+# 访问应用
+# 浏览器打开 http://localhost:5173/openrank/
 ```
+
+### 生产构建
+```bash
+# 构建生产版本
+pnpm build
+
+# 预览构建结果
+pnpm preview
+```
+
+## 📁 项目结构
+
+```
+src/
+├── components/          # 可复用组件
+│   ├── ChartContainer.tsx   # 图表容器组件
+│   ├── MonthSelector.tsx    # 月份选择器
+│   ├── StatCard.tsx         # 统计卡片
+│   └── ...
+├── pages/              # 页面组件
+│   ├── Home.tsx            # 首页
+│   ├── OpenRank.tsx        # OpenRank 分析页
+│   ├── Statistics.tsx      # 统计分析页
+│   ├── Trends.tsx          # 趋势分析页
+│   └── Compare.tsx         # 项目对比页
+├── hooks/              # 自定义 Hooks
+│   ├── useErrorHandler.ts  # 错误处理
+│   ├── useLoadingState.ts  # 加载状态
+│   └── useTheme.ts         # 主题管理
+├── services/           # API 服务
+│   └── api.ts              # API 接口封装
+├── types/              # TypeScript 类型定义
+│   └── index.ts            # 通用类型
+├── utils/              # 工具函数
+│   └── dataProcessor.ts    # 数据处理工具
+└── ...
+```
+
+## 🎨 页面功能
+
+### 首页 (Home)
+
+- 项目概览和快速导航
+- 关键指标摘要展示
+- 最新数据趋势预览
+
+### OpenRank 分析 (OpenRank)
+
+- OpenRank 指标的详细分析
+- 时间序列趋势图表
+- 统计摘要和变化趋势
+
+### 统计分析 (Statistics)
+
+- 多维度指标统计
+- 开发者、Issue、PR 等详细分析
+- 可配置的时间范围选择
+
+### 趋势分析 (Trends)
+
+- 长期趋势分析
+- 多指标对比展示
+- 趋势预测和洞察
+
+### 项目对比 (Compare)
+
+- 多项目横向对比
+- 实时数据同步
+- 灵活的项目管理
+
+## 🔧 配置说明
+
+### 环境变量
+项目支持通过环境变量进行配置：
+
+```bash
+# .env.local
+VITE_API_BASE_URL=https://api.example.com
+VITE_APP_TITLE=OpenRank 洞察平台
+```
+
+### API 配置
+在 `src/services/api.ts` 中配置 API 接口：
+
+```typescript
+// 配置基础 URL 和请求参数
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://oss.x-lab.info';
+```
+
+## 🤝 贡献指南
+
+我们欢迎所有形式的贡献！请遵循以下步骤：
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+### 开发规范
+
+- 使用 TypeScript 进行类型安全开发
+- 遵循 ESLint 代码规范
+- 编写清晰的提交信息
+- 添加必要的测试用例
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+## 🙏 致谢
+
+- [OpenDigger](https://github.com/X-lab2017/open-digger) - 提供开源项目数据支持
+- [React](https://reactjs.org/) - 强大的前端框架
+- [Recharts](https://recharts.org/) - 优秀的图表库
+- [Tailwind CSS](https://tailwindcss.com/) - 现代化的 CSS 框架
+
+## 📞 联系我们
+
+如果您有任何问题或建议，请通过以下方式联系我们：
+
+- 提交 [Issue](https://github.com/sunny0826/kwdb-openrank/issues)
+
+---
+
+⭐ 如果这个项目对您有帮助，请给我们一个 Star！
