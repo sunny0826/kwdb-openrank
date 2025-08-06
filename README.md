@@ -145,22 +145,28 @@ src/
 
 ## 🔧 配置说明
 
-### 环境变量
-项目支持通过环境变量进行配置：
-
-```bash
-# .env.local
-VITE_API_BASE_URL=https://api.example.com
-VITE_APP_TITLE=OpenRank 洞察平台
-```
-
 ### API 配置
-在 `src/services/api.ts` 中配置 API 接口：
+
+项目使用 OpenDigger API 获取开源项目数据，在 `src/services/api.ts` 中配置：
 
 ```typescript
-// 配置基础 URL 和请求参数
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://oss.x-lab.info';
+// OpenDigger API 基础 URL
+const BASE_URL = 'https://oss.open-digger.cn';
+
+// KWDB 项目信息
+const PROJECT_PATH = 'gitee/kwdb/kwdb';
+
+// 创建 axios 实例
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 ```
+
+如需修改数据源项目，请在 `api.ts` 中更新 `PROJECT_PATH` 常量。
 
 ## 🤝 贡献指南
 
