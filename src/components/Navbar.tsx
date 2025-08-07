@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Home, TrendingUp, Activity, GitBranch, Menu, X, MessageCircle } from 'lucide-react';
+import { BarChart3, Home, TrendingUp, Activity, GitBranch, Menu, X } from 'lucide-react';
 import { NavItem } from '../types';
 
 // Logo组件，使用favicon的SVG内容
@@ -115,18 +115,7 @@ const Navbar: React.FC = () => {
               );
             })}
             
-            {/* 反馈按钮 */}
-            <a
-              href="https://github.com/sunny0826/kwdb-openrank/issues/new"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center space-x-2 px-4 py-2 ml-4 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out border border-blue-400/30 relative overflow-hidden"
-            >
-              {/* 闪烁装饰效果 */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out"></div>
-              <MessageCircle className="w-4 h-4 relative z-10" />
-              <span className="relative z-10">反馈</span>
-            </a>
+
           </div>
 
           {/* 移动端菜单按钮 */}
@@ -179,19 +168,7 @@ const Navbar: React.FC = () => {
             );
           })}
           
-          {/* 移动端反馈按钮 */}
-          <a
-            href="https://github.com/sunny0826/kwdb-openrank/issues/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={closeMobileMenu}
-            className="group flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 border border-blue-400/30 relative overflow-hidden"
-          >
-            {/* 闪烁装饰效果 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out"></div>
-            <MessageCircle className="w-5 h-5 relative z-10" />
-            <span className="relative z-10">反馈</span>
-          </a>
+
         </div>
       </div>
     </nav>

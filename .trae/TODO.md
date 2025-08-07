@@ -1,7 +1,8 @@
 # TODO:
 
-- [x] 1: 分析Statistics.tsx中所有指标名称，确定metricDescriptions.ts中缺失的指标说明 (priority: High)
-- [x] 2: 为所有缺失的指标添加详细说明配置到metricDescriptions.ts (priority: High)
-- [x] 3: 在titleMap中添加所有Statistics页面指标名称的映射 (priority: High)
-- [x] 4: 测试Statistics页面所有指标的说明图标显示 (priority: Medium)
-- [x] 5: 运行npm run check确保代码质量 (priority: Low)
+- [x] 1: 分析当前按钮布局的问题和改进空间 (priority: High)
+- [x] 2: 优化按钮容器的响应式布局和间距 (priority: High)
+- [x] 3: 改进按钮的对齐方式和排列顺序 (priority: High)
+- [x] 4: 调整按钮的视觉层次和平衡感 (priority: Medium)
+- [ ] 5: 确保移动设备上的可用性和触摸友好性 (**IN PROGRESS**) (priority: Medium)
+- [ ] 6: 测试优化后的按钮排列效果 (priority: Low)

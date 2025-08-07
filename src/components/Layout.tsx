@@ -1,5 +1,6 @@
 import React from 'react';
 import Navbar from './Navbar';
+import FloatingButtonGroup from './FloatingButtonGroup';
 import { Github, ExternalLink, Heart } from 'lucide-react';
 
 interface LayoutProps {
@@ -113,6 +114,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </footer>
+      
+      {/* 悬浮按钮组 */}
+      <FloatingButtonGroup />
     </div>
   );
 };
