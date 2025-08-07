@@ -269,6 +269,7 @@ const Home: React.FC = () => {
               key={index} 
               data={card} 
               className="transform hover:scale-105 transition-transform duration-200"
+              timeSelector={timeSelector}
             />
           ))}
         </div>

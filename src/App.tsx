@@ -1,21 +1,26 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import Home from "@/pages/Home";
-import OpenRank from "@/pages/OpenRank";
-import Statistics from "@/pages/Statistics";
-import Trends from "@/pages/Trends";
-import Compare from "@/pages/Compare";
+import LoadingSpinner from "@/components/LoadingSpinner";
+
+// 动态导入页面组件
+const Home = lazy(() => import("@/pages/Home"));
+const OpenRank = lazy(() => import("@/pages/OpenRank"));
+const Statistics = lazy(() => import("@/pages/Statistics"));
+const Trends = lazy(() => import("@/pages/Trends"));
+const Compare = lazy(() => import("@/pages/Compare"));
 
 export default function App() {
   return (
     <ErrorBoundary>
       <Router basename="/openrank">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/openrank" element={<OpenRank />} />
-          <Route path="/statistics" element={<Statistics />} />
-          <Route path="/trends" element={<Trends />} />
-          <Route path="/compare" element={<Compare />} />
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/openrank" element={<OpenRank />} />
+            <Route path="/statistics" element={<Statistics />} />
+            <Route path="/trends" element={<Trends />} />
+            <Route path="/compare" element={<Compare />} />
           {/* 404 页面 */}
           <Route path="*" element={
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -31,7 +36,8 @@ export default function App() {
               </div>
             </div>
           } />
-        </Routes>
+          </Routes>
+        </Suspense>
       </Router>
     </ErrorBoundary>
   );

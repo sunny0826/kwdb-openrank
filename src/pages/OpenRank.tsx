@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, Calendar, BarChart3, LineChart, AreaChart } from 'lucide-react';
+import { Calendar, BarChart3, LineChart, AreaChart } from 'lucide-react';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
 import ChartContainer from '../components/ChartContainer';
@@ -20,7 +20,6 @@ import {
   processTimeSeriesData, 
   convertToChartData,
   filterDataByTimeRange,
-  convertDataForChart,
   filterDataBySpecificMonth 
 } from '../utils/dataProcessor';
 
@@ -47,12 +46,12 @@ const OpenRank: React.FC = () => {
       }
       
       setLoadingState({ isLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoadingState({ 
         isLoading: false, 
         error: { 
           code: 'FETCH_ERROR', 
-          message: error.message || 'OpenRank 数据加载失败' 
+          message: error instanceof Error ? error.message : 'OpenRank 数据加载失败' 
         } 
       });
     }
@@ -222,7 +221,18 @@ const OpenRank: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((card, index) => (
-            <StatCard key={index} data={card} />
+            <StatCard 
+              key={index} 
+              data={card} 
+              timeSelector={{
+                mode: selectedMonth ? 'specific' : 'range',
+                range: timeRange,
+                specific: selectedMonth ? {
+                  year: parseInt(selectedMonth.split('-')[0]),
+                  month: parseInt(selectedMonth.split('-')[1])
+                } : undefined
+              }}
+            />
           ))}
         </div>
       </div>

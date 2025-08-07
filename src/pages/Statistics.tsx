@@ -437,7 +437,18 @@ const Statistics: React.FC = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {currentCategoryCards.map((card, index) => (
-            <StatCard key={index} data={card} />
+            <StatCard 
+              key={index} 
+              data={card} 
+              timeSelector={{
+                mode: selectedMonth ? 'specific' : 'range',
+                range: timeRange,
+                specific: selectedMonth ? {
+                  year: parseInt(selectedMonth.split('-')[0]),
+                  month: parseInt(selectedMonth.split('-')[1])
+                } : undefined
+              }}
+            />
           ))}
         </div>
       </div>

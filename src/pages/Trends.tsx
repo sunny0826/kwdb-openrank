@@ -408,7 +408,18 @@ const Trends: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {trendStatCards.map((card, index) => (
-            <StatCard key={index} data={card} />
+            <StatCard 
+              key={index} 
+              data={card} 
+              timeSelector={{
+                mode: selectedMonth ? 'specific' : 'range',
+                range: timeRange,
+                specific: selectedMonth ? {
+                  year: parseInt(selectedMonth.split('-')[0]),
+                  month: parseInt(selectedMonth.split('-')[1])
+                } : undefined
+              }}
+            />
           ))}
         </div>
       </div>

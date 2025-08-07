@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus, ArrowUp, ArrowDown } from 'lucide-react';
-import { StatCard as StatCardType } from '../types';
+import { StatCard as StatCardType, TimeSelector } from '../types';
 import { formatNumber, formatPercentage } from '../utils/dataProcessor';
 
 interface StatCardProps {
@@ -8,9 +8,10 @@ interface StatCardProps {
   className?: string;
   variant?: 'default' | 'gradient' | 'minimal';
   loading?: boolean;
+  timeSelector?: TimeSelector; // 新增：时间选择器状态
 }
 
-const StatCard: React.FC<StatCardProps> = ({ data, className = '', variant = 'default', loading = false }) => {
+const StatCard: React.FC<StatCardProps> = ({ data, className = '', variant = 'default', loading = false, timeSelector }) => {
   const { title, value, change, trend, description } = data;
 
   const getTrendIcon = () => {
@@ -55,8 +56,21 @@ const StatCard: React.FC<StatCardProps> = ({ data, className = '', variant = 'de
     }
     // 如果是字符串，检查是否包含单位
     if (typeof val === 'string') {
-      // 如果字符串包含空格，可能是带单位的值，直接返回
+      // 如果字符串包含空格，可能是带单位的值，需要根据时间选择器调整单位
       if (val.includes(' ')) {
+        // 检查是否是时间相关的单位（月、季度、年）
+        if (val.includes('个月') && timeSelector?.mode === 'range') {
+          const numValue = parseFloat(val);
+          if (!isNaN(numValue)) {
+            if (timeSelector.range === 'quarterly') {
+              const quarters = numValue;
+              return `${quarters} 个季度`;
+            } else if (timeSelector.range === 'yearly') {
+              const years = numValue;
+              return `${years} 年`;
+            }
+          }
+        }
         return val;
       }
       // 如果是纯数字字符串，尝试转换

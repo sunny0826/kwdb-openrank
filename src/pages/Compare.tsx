@@ -642,7 +642,11 @@ const Compare: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {generateProjectStatCards(project).map((card, cardIndex) => (
-                  <StatCard key={cardIndex} data={card} />
+                  <StatCard 
+                    key={cardIndex} 
+                    data={card} 
+                    timeSelector={timeSelector}
+                  />
                 ))}
               </div>
             )}
