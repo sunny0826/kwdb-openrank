@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Calendar, BarChart3, LineChart, PieChart, ArrowLeftRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrendingUp, Calendar, BarChart3, ArrowLeftRight } from 'lucide-react';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
 import ChartContainer from '../components/ChartContainer';
@@ -16,9 +16,6 @@ import {
   TimeSelector
 } from '../types';
 import { 
-  calculateMetricsSummary, 
-  processTimeSeriesData, 
-  convertToChartData,
   calculateStatistics,
   convertDataForChart,
   generateChartDataByTimeSelector,
@@ -141,12 +138,12 @@ const Trends: React.FC = () => {
       }
       
       setLoadingState({ isLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoadingState({ 
         isLoading: false, 
         error: { 
           code: 'FETCH_ERROR', 
-          message: error.message || '趋势数据加载失败' 
+          message: error instanceof Error ? error.message : '趋势数据加载失败' 
         } 
       });
     }
@@ -163,7 +160,7 @@ const Trends: React.FC = () => {
   const [trendStatCards, setTrendStatCards] = useState<StatCardType[]>([]);
 
   // 生成趋势统计卡片
-  const generateTrendStatCards = (): StatCardType[] => {
+  const generateTrendStatCards = useCallback((): StatCardType[] => {
     const dataConfigs = [
       { title: 'OpenRank 趋势', data: openRankData, color: '#3b82f6', key: 'openrank', description: 'OpenRank 指标趋势分析' },
       { title: '活跃度趋势', data: activityData, color: '#10b981', key: 'activity', description: '项目活跃度趋势分析' },
@@ -189,7 +186,7 @@ const Trends: React.FC = () => {
          description: config.description
        };
     });
-  };
+  }, [timeSelector, openRankData, activityData, participantsData]);
 
   // 监听时间选择器变化，重新生成统计数据
   useEffect(() => {
@@ -197,7 +194,7 @@ const Trends: React.FC = () => {
       const newTrendStatCards = generateTrendStatCards();
       setTrendStatCards(newTrendStatCards);
     }
-  }, [timeSelector, openRankData, activityData, participantsData]);
+  }, [timeSelector, openRankData, activityData, participantsData, generateTrendStatCards]);
 
   // 生成综合趋势图表数据
   const generateComprehensiveTrendData = (): ChartDataPoint[] => {

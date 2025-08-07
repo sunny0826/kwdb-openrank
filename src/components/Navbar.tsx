@@ -3,6 +3,38 @@ import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, Home, TrendingUp, Activity, GitBranch, Menu, X } from 'lucide-react';
 import { NavItem } from '../types';
 
+// Logo组件，使用favicon的SVG内容
+const Logo: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <defs>
+      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{stopColor:"#3b82f6",stopOpacity:1}} />
+        <stop offset="100%" style={{stopColor:"#1e40af",stopOpacity:1}} />
+      </linearGradient>
+    </defs>
+    
+    {/* 背景圆形 */}
+    <circle cx="16" cy="16" r="15" fill="url(#gradient)" stroke="#1e40af" strokeWidth="2"/>
+    
+    {/* K 字母 */}
+    <g fill="white">
+      {/* K 的左侧竖线 */}
+      <rect x="8" y="8" width="3" height="16" rx="1"/>
+      
+      {/* K 的右上斜线 */}
+      <rect x="12" y="8" width="10" height="3" rx="1" transform="rotate(35 17 9.5)"/>
+      
+      {/* K 的右下斜线 */}
+      <rect x="12" y="21" width="10" height="3" rx="1" transform="rotate(-35 17 22.5)"/>
+    </g>
+    
+    {/* 科技感装饰点 */}
+    <circle cx="24" cy="10" r="1.5" fill="#60a5fa" opacity="0.8"/>
+    <circle cx="26" cy="14" r="1" fill="#93c5fd" opacity="0.6"/>
+    <circle cx="25" cy="18" r="0.8" fill="#dbeafe" opacity="0.4"/>
+  </svg>
+);
+
 const navItems: NavItem[] = [
   { label: '首页', path: '/', icon: 'Home' },
   { label: 'OpenRank', path: '/openrank', icon: 'BarChart3' },
@@ -44,8 +76,8 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo 和项目名称 */}
           <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
-              <GitBranch className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg">
+              <Logo className="w-8 h-8" />
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">KWDB OpenRank</h1>

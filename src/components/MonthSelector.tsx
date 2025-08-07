@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Calendar } from 'lucide-react';
-import { MonthSelection, TimeSelector, TimeSelectionMode } from '../types';
+import { TimeSelector, TimeSelectionMode } from '../types';
 
 interface MonthSelectorProps {
   value: TimeSelector;
@@ -62,14 +62,19 @@ const MonthSelector: React.FC<MonthSelectorProps> = ({
     if (value.mode === 'specific' && value.specific) {
       setSelectedYear(value.specific.year);
       setSelectedMonth(value.specific.month);
-    } else if (availableMonths.length > 0) {
+    }
+  }, [value.mode, value.specific]);
+
+  // 单独处理 availableMonths 的初始化，避免循环更新
+  useEffect(() => {
+    if (availableMonths.length > 0 && value.mode !== 'specific') {
       // 默认选择最新的可用月份
       const latestMonth = availableMonths[availableMonths.length - 1];
       const [year, month] = latestMonth.split('-').map(Number);
       setSelectedYear(year);
       setSelectedMonth(month);
     }
-  }, [value, availableMonths]);
+  }, [availableMonths, value.mode]); // 添加缺失的依赖项
 
   // 处理模式切换
   const handleModeChange = (mode: TimeSelectionMode) => {
@@ -197,7 +202,7 @@ const MonthSelector: React.FC<MonthSelectorProps> = ({
                         <button
                           key={option.value}
                           onClick={() => {
-                            onChange({ mode: 'range', range: option.value as any });
+                            onChange({ mode: 'range', range: option.value as 'monthly' | 'quarterly' | 'yearly' });
                             setIsOpen(false);
                           }}
                           className={`
@@ -255,13 +260,6 @@ const MonthSelector: React.FC<MonthSelectorProps> = ({
                               onClick={() => {
                                 if (isAvailable) {
                                   handleMonthChange(monthNumber);
-                                  onChange({
-                                    mode: 'specific',
-                                    specific: {
-                                      year: selectedYear,
-                                      month: monthNumber
-                                    }
-                                  });
                                   setIsOpen(false);
                                 }
                               }}

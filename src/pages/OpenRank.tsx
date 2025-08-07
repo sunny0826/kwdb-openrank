@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, BarChart3, LineChart, AreaChart } from 'lucide-react';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
@@ -16,8 +16,6 @@ import {
 } from '../types';
 import { 
   calculateMetricsSummary, 
-  processTimeSeriesData, 
-  convertToChartData,
   filterDataByTimeSelector,
   generateChartDataByTimeSelector,
   getAvailableMonths
@@ -63,18 +61,8 @@ const OpenRank: React.FC = () => {
     loadData();
   }, []);
 
-  // 监听timeSelector变化，重新生成统计数据
-  useEffect(() => {
-    if (Object.keys(globalOpenRankData).length > 0) {
-      const newStatCards = generateStatCards();
-      const newChartData = generateChartData();
-      setStatCards(newStatCards);
-      setChartData(newChartData);
-    }
-  }, [timeSelector, globalOpenRankData]);
-
   // 生成统计卡片数据
-  const generateStatCards = (): StatCardType[] => {
+  const generateStatCards = useCallback((): StatCardType[] => {
     const filteredGlobalData = filterDataByTimeSelector(globalOpenRankData, timeSelector);
     const globalSummary = calculateMetricsSummary(filteredGlobalData);
 
@@ -111,12 +99,22 @@ const OpenRank: React.FC = () => {
         description: '可用数据的时间跨度',
       },
     ];
-  };
+  }, [globalOpenRankData, timeSelector]);
 
   // 生成图表数据
-  const generateChartData = () => {
+  const generateChartData = useCallback(() => {
     return generateChartDataByTimeSelector(globalOpenRankData, timeSelector);
-  };
+  }, [globalOpenRankData, timeSelector]);
+
+  // 监听timeSelector变化，重新生成统计数据
+  useEffect(() => {
+    if (Object.keys(globalOpenRankData).length > 0) {
+      const newStatCards = generateStatCards();
+      const newChartData = generateChartData();
+      setStatCards(newStatCards);
+      setChartData(newChartData);
+    }
+  }, [timeSelector, globalOpenRankData, generateStatCards, generateChartData]);
 
   if (loadingState.isLoading) {
     return (

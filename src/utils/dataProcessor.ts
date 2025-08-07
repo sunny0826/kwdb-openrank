@@ -62,11 +62,12 @@ export function formatDateForChart(date: string, type: 'monthly' | 'quarterly' |
   switch (type) {
     case 'yearly':
       return dateObj.getFullYear().toString();
-    case 'quarterly':
+    case 'quarterly': {
       const year = dateObj.getFullYear();
       const month = dateObj.getMonth() + 1;
       const quarter = Math.ceil(month / 3);
       return `${year}Q${quarter}`;
+    }
     case 'monthly':
       return dateObj.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit' });
     default:

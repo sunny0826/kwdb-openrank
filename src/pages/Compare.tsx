@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Github, Plus, X, BarChart3 } from 'lucide-react';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
@@ -6,6 +6,7 @@ import ChartContainer from '../components/ChartContainer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import MonthSelector from '../components/MonthSelector';
+import KWDBLogo from '../assets/kwdb.svg';
 import { 
   ProjectMeta, 
   OpenRankData, 
@@ -15,8 +16,12 @@ import {
   TimeSelector
 } from '../types';
 import { 
-  getLatestValue,
-  calculateMetricsSummary
+  getAvailableMonths,
+  generateChartDataByTimeSelector,
+  calculateSpecificMonthSummary,
+  calculateStatistics,
+  processTimeSeriesData,
+  convertToChartData
 } from '../utils/dataProcessor';
 import { OpenDiggerAPI } from '../services/api';
 
@@ -41,6 +46,8 @@ interface ProjectData {
   error?: string;
 }
 
+
+
 const Compare: React.FC = () => {
   const [projects, setProjects] = useState<ProjectData[]>([
     {
@@ -55,7 +62,7 @@ const Compare: React.FC = () => {
       openRankData: {},
       activityData: {},
       participantsData: {},
-      loading: false
+      loading: true // 初始状态设置为加载中
     }
   ]);
   
@@ -73,59 +80,111 @@ const Compare: React.FC = () => {
     range: 'monthly'
   });
 
+  // 状态变量用于存储计算后的数据
+  const [projectStatCards, setProjectStatCards] = useState<StatCardType[][]>([]);
+  const [comparisonChartData, setComparisonChartData] = useState<ChartDataPoint[]>([]);
+
+  // 请求缓存，避免重复请求
+  const requestCache = useRef<Map<string, Promise<Partial<ProjectData>>>>(new Map());
+
   // 使用真实API获取项目数据
-   const fetchProjectData = async (config: ProjectConfig): Promise<Partial<ProjectData>> => {
-     try {
-       // 调用通用的项目数据获取API
-       const result = await OpenDiggerAPI.getProjectData(config.platform, config.org, config.repo);
-       
-       if (result.status === 'error') {
-         throw new Error(result.message || '获取项目数据失败');
-       }
+  const fetchProjectData = useCallback(async (config: ProjectConfig): Promise<Partial<ProjectData>> => {
+    const cacheKey = `${config.platform}-${config.org}-${config.repo}`;
+    
+    // 检查是否有正在进行的请求
+    if (requestCache.current.has(cacheKey)) {
+      return requestCache.current.get(cacheKey)!;
+    }
+
+    const requestPromise = (async () => {
+      try {
+        // 调用通用的项目数据获取API
+        const result = await OpenDiggerAPI.getProjectData(config.platform, config.org, config.repo);
+        
+        if (result.status === 'error') {
+          throw new Error('message' in result ? result.message : '获取项目数据失败');
+        }
  
-       return {
-         openRankData: result.openRankData,
-         activityData: result.activityData,
-         participantsData: result.participantsData
-       };
-     } catch (error) {
-       console.error('获取项目数据失败:', error);
-       throw new Error('无法获取项目数据，请检查项目名称是否正确');
-     }
-   };
+        return {
+          openRankData: result.openRankData || {},
+          activityData: result.activityData || {},
+          participantsData: result.participantsData || {}
+        };
+      } catch (error) {
+        console.error(`获取项目数据失败 (${cacheKey}):`, error);
+        throw new Error(error instanceof Error ? error.message : '无法获取项目数据，请检查项目名称是否正确');
+      } finally {
+        // 请求完成后清除缓存
+        requestCache.current.delete(cacheKey);
+      }
+    })();
+
+    // 缓存请求
+    requestCache.current.set(cacheKey, requestPromise);
+    return requestPromise;
+  }, []);
 
   // 加载项目数据
-  const loadProjectData = async (projectIndex: number) => {
-    const project = projects[projectIndex];
-    if (!project) return;
+  const loadProjectData = useCallback(async (projectIndex: number) => {
+    // 使用函数式更新来避免依赖projects状态
+    setProjects(prev => {
+      const currentProject = prev[projectIndex];
+      if (!currentProject) {
+        console.error(`项目索引 ${projectIndex} 不存在`);
+        return prev;
+      }
 
-    setProjects(prev => prev.map((p, i) => 
-      i === projectIndex ? { ...p, loading: true, error: undefined } : p
-    ));
+      // 设置加载状态
+      const updatedProjects = prev.map((p, i) => 
+        i === projectIndex ? { ...p, loading: true, error: undefined } : p
+      );
+      
+      // 异步加载数据
+      (async () => {
+        try {
+          const data = await fetchProjectData(currentProject.config);
+          
+          setProjects(current => current.map((p, i) => 
+            i === projectIndex ? { 
+              ...p, 
+              ...data,
+              loading: false 
+            } : p
+          ));
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : '加载失败';
+          console.error(`项目数据加载失败: ${currentProject.config.name}`, error);
+          
+          setProjects(current => current.map((p, i) => 
+            i === projectIndex ? { 
+              ...p, 
+              loading: false, 
+              error: errorMessage 
+            } : p
+          ));
+        }
+      })();
+      
+      return updatedProjects;
+    });
+  }, [fetchProjectData]);
 
-    try {
-      const data = await fetchProjectData(project.config);
-      setProjects(prev => prev.map((p, i) => 
-        i === projectIndex ? { 
-          ...p, 
-          ...data,
-          loading: false 
-        } : p
-      ));
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '加载失败';
-      setProjects(prev => prev.map((p, i) => 
-        i === projectIndex ? { 
-          ...p, 
-          loading: false, 
-          error: errorMessage 
-        } : p
-      ));
-    }
-  };
+  // 仓库列表缓存
+  const repoListCache = useRef<string[] | null>(null);
+  const repoListFetching = useRef<boolean>(false);
 
   // 获取仓库列表
-  const fetchRepoList = async () => {
+  const fetchRepoList = useCallback(async () => {
+    // 如果已经有缓存或正在获取，直接返回
+    if (repoListCache.current || repoListFetching.current) {
+      if (repoListCache.current) {
+        setAllRepos(repoListCache.current);
+      }
+      return;
+    }
+
+    repoListFetching.current = true;
+
     try {
       // 由于CORS限制，这里提供一些常用的仓库作为示例
       const popularRepos = [
@@ -171,13 +230,22 @@ const Compare: React.FC = () => {
         'kubernetes/minikube'
       ];
       
+      // 缓存并设置默认列表
+      repoListCache.current = popularRepos;
       setAllRepos(popularRepos);
       
       // 尝试从API获取更多仓库（如果可用）
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+        
         const response = await fetch('https://oss.open-digger.cn/repo_list.csv', {
-          mode: 'cors'
+          mode: 'cors',
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
           const csvText = await response.text();
           const lines = csvText.split('\n');
@@ -192,6 +260,7 @@ const Compare: React.FC = () => {
           
           // 合并API数据和默认数据
           const combinedRepos = [...new Set([...popularRepos, ...repos])];
+          repoListCache.current = combinedRepos;
           setAllRepos(combinedRepos);
         }
       } catch (apiError) {
@@ -201,15 +270,19 @@ const Compare: React.FC = () => {
     } catch (error) {
       console.error('初始化仓库列表失败:', error);
       // 设置最基本的仓库列表
-      setAllRepos([
+      const basicRepos = [
         'microsoft/vscode',
         'facebook/react',
         'vuejs/vue',
         'nodejs/node',
         'kubernetes/kubernetes'
-      ]);
+      ];
+      repoListCache.current = basicRepos;
+      setAllRepos(basicRepos);
+    } finally {
+      repoListFetching.current = false;
     }
-  };
+  }, []);
 
   // 搜索仓库建议
   const searchRepoSuggestions = (query: string) => {
@@ -307,153 +380,138 @@ const Compare: React.FC = () => {
   };
 
   // 生成项目统计卡片
-  const generateProjectStatCards = (project: ProjectData): StatCardType[] => {
-    // 根据时间选择器过滤数据
-    const filteredOpenRank = filterDataByTimeSelector(project.openRankData);
-    const filteredActivity = filterDataByTimeSelector(project.activityData);
-    const filteredParticipants = filterDataByTimeSelector(project.participantsData);
-    
-    // 获取最新月份的数据
-    const latestOpenRank = getLatestValue(filteredOpenRank);
-    const latestActivity = getLatestValue(filteredActivity);
-    const latestParticipants = getLatestValue(filteredParticipants);
-    
-    // 计算变化趋势（与前一个月对比）
-    const openRankStats = calculateMetricsSummary(filteredOpenRank);
-    const activityStats = calculateMetricsSummary(filteredActivity);
-    const participantsStats = calculateMetricsSummary(filteredParticipants);
+  const generateProjectStatCards = useCallback((project: ProjectData, selector: TimeSelector): StatCardType[] => {
+    let openRankSummary;
+    let activitySummary;
+    let participantsSummary;
+
+    if (selector.mode === 'specific' && selector.specific) {
+      openRankSummary = calculateSpecificMonthSummary(
+        project.openRankData,
+        selector.specific
+      );
+      activitySummary = calculateSpecificMonthSummary(
+        project.activityData,
+        selector.specific
+      );
+      participantsSummary = calculateSpecificMonthSummary(
+        project.participantsData,
+        selector.specific
+      );
+    } else {
+      const timeRange = selector.range || 'monthly';
+      openRankSummary = calculateStatistics(
+        convertToChartData(processTimeSeriesData(project.openRankData, timeRange))
+      );
+      activitySummary = calculateStatistics(
+        convertToChartData(processTimeSeriesData(project.activityData, timeRange))
+      );
+      participantsSummary = calculateStatistics(
+        convertToChartData(processTimeSeriesData(project.participantsData, timeRange))
+      );
+    }
 
     return [
       {
         title: 'OpenRank',
-        value: latestOpenRank,
-        change: openRankStats.changePercentage,
-        trend: openRankStats.trend,
+        value: openRankSummary.currentValue,
+        change: openRankSummary.changePercentage,
+        trend: openRankSummary.trend,
         description: '项目影响力指标'
       },
       {
         title: '活跃度',
-        value: latestActivity,
-        change: activityStats.changePercentage,
-        trend: activityStats.trend,
+        value: activitySummary.currentValue,
+        change: activitySummary.changePercentage,
+        trend: activitySummary.trend,
         description: '项目活跃度水平'
       },
       {
         title: '参与者',
-        value: latestParticipants,
-        change: participantsStats.changePercentage,
-        trend: participantsStats.trend,
+        value: participantsSummary.currentValue,
+        change: participantsSummary.changePercentage,
+        trend: participantsSummary.trend,
         description: '项目参与者数量'
       }
     ];
-  };
+  }, []);
 
   // 获取所有项目的可用月份
-  const getAvailableMonths = (): string[] => {
+  const getAllAvailableMonths = useCallback((): string[] => {
     const allMonths = new Set<string>();
+    
     projects.forEach(project => {
-      Object.keys(project.openRankData).forEach(month => allMonths.add(month));
-      Object.keys(project.activityData).forEach(month => allMonths.add(month));
-      Object.keys(project.participantsData).forEach(month => allMonths.add(month));
+      // 使用统一的getAvailableMonths函数处理每个项目的数据
+      const projectMonths = getAvailableMonths(project.openRankData);
+      projectMonths.forEach(month => allMonths.add(month));
+      
+      const activityMonths = getAvailableMonths(project.activityData);
+      activityMonths.forEach(month => allMonths.add(month));
+      
+      const participantsMonths = getAvailableMonths(project.participantsData);
+      participantsMonths.forEach(month => allMonths.add(month));
     });
-    return Array.from(allMonths).sort();
-  };
+    
+    return Array.from(allMonths).sort().reverse();
+  }, [projects]);
 
-  // 根据时间选择器过滤数据
-  const filterDataByTimeSelector = (data: StatisticsData): StatisticsData => {
-    if (timeSelector.mode === 'specific' && timeSelector.specific && timeSelector.specific.month && timeSelector.specific.year) {
-      const targetMonth = `${timeSelector.specific.year}-${timeSelector.specific.month.toString().padStart(2, '0')}`;
-      return { [targetMonth]: data[targetMonth] || 0 };
-    }
-    
-    // 范围视图模式下根据选择的范围聚合数据
-    if (timeSelector.mode === 'range') {
-      const aggregatedData: StatisticsData = {};
-      const sortedDates = Object.keys(data).sort();
-      
-      if (timeSelector.range === 'yearly') {
-        // 年度聚合：取最后一年的数据
-        const years = [...new Set(sortedDates.map(date => date.substring(0, 4)))];
-        if (years.length > 0) {
-          const lastYear = years[years.length - 1];
-          const lastYearDates = sortedDates.filter(date => date.startsWith(lastYear));
-          lastYearDates.forEach(date => {
-            aggregatedData[date] = data[date];
-          });
-        }
-      } else if (timeSelector.range === 'quarterly') {
-        // 季度聚合：只显示最后一个季度的数据
-        const quarterlyData: { [quarter: string]: { date: string; value: number }[] } = {};
-        
-        sortedDates.forEach(date => {
-          const [year, month] = date.split('-');
-          const monthNum = parseInt(month);
-          const quarter = Math.ceil(monthNum / 3);
-          const quarterKey = `${year}-Q${quarter}`;
-          
-          if (!quarterlyData[quarterKey]) {
-            quarterlyData[quarterKey] = [];
-          }
-          quarterlyData[quarterKey].push({ date, value: data[date] });
-        });
-        
-        // 找到最后一个季度
-        const quarterKeys = Object.keys(quarterlyData).sort();
-        if (quarterKeys.length > 0) {
-          const lastQuarterKey = quarterKeys[quarterKeys.length - 1];
-          const lastQuarterData = quarterlyData[lastQuarterKey];
-          lastQuarterData.forEach(item => {
-            aggregatedData[item.date] = item.value;
-          });
-        }
-      } else {
-        // 月度视图：取最后一个月度数据点
-        if (sortedDates.length > 0) {
-          const lastDate = sortedDates[sortedDates.length - 1];
-          aggregatedData[lastDate] = data[lastDate];
-        }
-      }
-      
-      return aggregatedData;
-    }
-    
-    return data;
-  };
+
 
   // 生成对比图表数据
-  const generateComparisonChartData = (): ChartDataPoint[] => {
+  const generateComparisonChartData = useCallback((projectsData: ProjectData[], selector: TimeSelector): ChartDataPoint[] => {
     const allDates = new Set<string>();
-    projects.forEach(project => {
-      Object.keys(filterDataByTimeSelector(project.openRankData)).forEach(date => allDates.add(date));
+    
+    // 收集所有项目的日期
+    projectsData.forEach(project => {
+      const openRankChartData = generateChartDataByTimeSelector(project.openRankData, selector);
+      openRankChartData.forEach(point => allDates.add(point.date));
     });
 
     return Array.from(allDates).sort().map(date => {
       const dataPoint: ChartDataPoint = { date, value: 0 };
       
-      projects.forEach((project, index) => {
+      projectsData.forEach((project, index) => {
         const key = index === 0 ? 'kwdb' : `project${index}`;
-        const filteredOpenRank = filterDataByTimeSelector(project.openRankData);
-        const filteredActivity = filterDataByTimeSelector(project.activityData);
-        const filteredParticipants = filterDataByTimeSelector(project.participantsData);
+        const openRankChartData = generateChartDataByTimeSelector(project.openRankData, selector);
+        const activityChartData = generateChartDataByTimeSelector(project.activityData, selector);
+        const participantsChartData = generateChartDataByTimeSelector(project.participantsData, selector);
         
-        dataPoint[`${key}_openrank`] = filteredOpenRank[date] || 0;
-        dataPoint[`${key}_activity`] = filteredActivity[date] || 0;
-        dataPoint[`${key}_participants`] = filteredParticipants[date] || 0;
+        const openRankPoint = openRankChartData.find(p => p.date === date);
+        const activityPoint = activityChartData.find(p => p.date === date);
+        const participantsPoint = participantsChartData.find(p => p.date === date);
+        
+        dataPoint[`${key}_openrank`] = openRankPoint?.value || 0;
+        dataPoint[`${key}_activity`] = activityPoint?.value || 0;
+        dataPoint[`${key}_participants`] = participantsPoint?.value || 0;
       });
       
       return dataPoint;
     });
-  };
+  }, []);
 
   // 初始加载KWDB数据
   useEffect(() => {
     loadProjectData(0);
     fetchRepoList();
-  }, []);
+  }, [fetchRepoList, loadProjectData]); // loadProjectData现在不依赖projects状态
 
-
-
-  const comparisonChartData = generateComparisonChartData();
+  // 监听timeSelector和项目数据变化，重新生成统计数据
+  useEffect(() => {
+    const hasValidData = projects.some(project => 
+      Object.keys(project.openRankData).length > 0 || 
+      Object.keys(project.activityData).length > 0 || 
+      Object.keys(project.participantsData).length > 0
+    );
+    
+    if (hasValidData) {
+      const newProjectStatCards = projects.map(project => 
+        generateProjectStatCards(project, timeSelector)
+      );
+      const newComparisonChartData = generateComparisonChartData(projects, timeSelector);
+      setProjectStatCards(newProjectStatCards);
+      setComparisonChartData(newComparisonChartData);
+    }
+  }, [timeSelector, projects, generateProjectStatCards, generateComparisonChartData]);
 
   return (
     <Layout>
@@ -484,7 +542,7 @@ const Compare: React.FC = () => {
             <MonthSelector
               value={timeSelector}
               onChange={setTimeSelector}
-              availableMonths={getAvailableMonths()}
+              availableMonths={getAllAvailableMonths()}
             />
           </div>
         </div>
@@ -588,17 +646,23 @@ const Compare: React.FC = () => {
           <div key={project.config.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
-                  project.config.platform === 'github' ? 'bg-gray-900' : 'bg-red-600'
-                }`}>
-                  {project.config.platform === 'github' ? (
-                    <Github className="w-5 h-5 text-white" />
-                  ) : (
-                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.15a.592.592 0 0 1-.592-.592v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296z"/>
-                    </svg>
-                  )}
-                </div>
+                {index === 0 ? (
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white border-2 border-blue-600">
+                    <img src={KWDBLogo} alt="KWDB Logo" className="w-6 h-6" />
+                  </div>
+                ) : (
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
+                    project.config.platform === 'github' ? 'bg-gray-900' : 'bg-red-600'
+                  }`}>
+                    {project.config.platform === 'github' ? (
+                      <Github className="w-5 h-5 text-white" />
+                    ) : (
+                      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.15a.592.592 0 0 1-.592-.592v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296z"/>
+                      </svg>
+                    )}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
                     {project.config.displayName || project.config.name}
@@ -641,7 +705,7 @@ const Compare: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {generateProjectStatCards(project).map((card, cardIndex) => (
+                {(projectStatCards[index] || []).map((card, cardIndex) => (
                   <StatCard 
                     key={cardIndex} 
                     data={card} 
@@ -667,8 +731,8 @@ const Compare: React.FC = () => {
                 config={{
                   title: 'OpenRank 对比',
                   type: 'line',
-                  dataKey: 'kwdb_openrank', // 保持兼容性
-                  color: '#3B82F6', // 保持兼容性
+                  dataKey: 'kwdb_openrank',
+                  color: '#3B82F6',
                   showGrid: true,
                   showTooltip: true,
                   showLegend: true,
@@ -689,8 +753,8 @@ const Compare: React.FC = () => {
                 config={{
                   title: '活跃度对比',
                   type: 'line',
-                  dataKey: 'kwdb_activity', // 保持兼容性
-                  color: '#8B5CF6', // 保持兼容性
+                  dataKey: 'kwdb_activity',
+                  color: '#8B5CF6',
                   showGrid: true,
                   showTooltip: true,
                   showLegend: true,

@@ -1,21 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
-  Activity, 
   Users, 
   AlertCircle, 
   GitPullRequest, 
   Calendar, 
   Filter,
-  UserPlus,
-  UserMinus,
-  Clock,
-  MessageSquare,
-  CheckCircle,
-  XCircle,
-  Timer,
-  BarChart3,
-  TrendingUp,
-  GitBranch
+  TrendingUp
 } from 'lucide-react';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
@@ -34,10 +24,6 @@ import {
   MetricCategory
 } from '../types';
 import { 
-  calculateMetricsSummary, 
-  getLatestValue,
-  processTimeSeriesData, 
-  convertToChartData,
   generateChartDataByTimeSelector,
   generateStatCardsByTimeSelector,
   getAvailableMonths
@@ -79,7 +65,7 @@ const Statistics: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<string>('activity');
 
   // 指标配置
-  const metricConfigs: MetricConfig[] = [
+  const metricConfigs: MetricConfig[] = useMemo(() => [
     // 基础指标
     { key: 'activity', name: '项目活跃度', category: 'general', color: '#3b82f6', icon: 'Activity' },
     { key: 'participants', name: '参与者数量', category: 'general', color: '#10b981', icon: 'Users' },
@@ -105,7 +91,7 @@ const Statistics: React.FC = () => {
     { key: 'change_request_response_time', name: '变更请求响应时间', category: 'change_request', unit: '小时', color: '#f59e0b', icon: 'Clock' },
     { key: 'change_request_resolution_duration', name: '变更请求解决时长', category: 'change_request', unit: '天', color: '#8b5cf6', icon: 'Timer' },
     { key: 'change_request_age', name: '变更请求年龄', category: 'change_request', unit: '天', color: '#ef4444', icon: 'Calendar' },
-  ];
+  ], []);
 
   // 加载数据
   const loadData = async () => {
@@ -179,12 +165,12 @@ const Statistics: React.FC = () => {
       if (changeRequestAgeResult.status === 'success') setChangeRequestAgeData(changeRequestAgeResult.data);
       
       setLoadingState({ isLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoadingState({ 
         isLoading: false, 
         error: { 
           code: 'FETCH_ERROR', 
-          message: error.message || '统计数据加载失败' 
+          message: error instanceof Error ? error.message : '统计数据加载失败' 
         } 
       });
     }
@@ -195,7 +181,7 @@ const Statistics: React.FC = () => {
   }, []);
 
   // 获取数据映射
-  const getDataByKey = (key: string): StatisticsData => {
+  const getDataByKey = useCallback((key: string): StatisticsData => {
     const dataMap: { [key: string]: StatisticsData } = {
       'activity': activityData,
       'participants': participantsData,
@@ -217,7 +203,7 @@ const Statistics: React.FC = () => {
       'change_request_age': changeRequestAgeData,
     };
     return dataMap[key] || {};
-  };
+  }, [activityData, participantsData, issuesData, changeRequestsData, newContributorsData, contributorsData, inactiveContributorsData, busFactorData, issuesClosedData, issueCommentsData, issueResponseTimeData, issueResolutionDurationData, issueAgeData, changeRequestsAcceptedData, changeRequestsReviewsData, changeRequestResponseTimeData, changeRequestResolutionDurationData, changeRequestAgeData]);
 
   // 获取可用月份
   const availableMonths = getAvailableMonths(activityData);
@@ -226,7 +212,7 @@ const Statistics: React.FC = () => {
   const [currentCategoryCards, setCurrentCategoryCards] = useState<StatCardType[]>([]);
 
   // 生成分类统计卡片
-  const generateCategoryStatCards = (category: MetricCategory): StatCardType[] => {
+  const generateCategoryStatCards = useCallback((category: MetricCategory): StatCardType[] => {
     const categoryConfigs = metricConfigs.filter(config => config.category === category);
     
     return categoryConfigs.map(config => {
@@ -249,7 +235,7 @@ const Statistics: React.FC = () => {
         description: config.description || `${config.name}统计`
       };
     });
-  };
+  }, [timeSelector, metricConfigs, getDataByKey]);
 
   // 监听时间选择器和分类变化，重新生成统计数据
   useEffect(() => {
@@ -262,7 +248,7 @@ const Statistics: React.FC = () => {
       const newCategoryCards = generateCategoryStatCards(selectedCategory);
       setCurrentCategoryCards(newCategoryCards);
     }
-  }, [timeSelector, selectedCategory, activityData, participantsData, issuesData, changeRequestsData, newContributorsData, contributorsData, inactiveContributorsData, busFactorData, issuesClosedData, issueCommentsData, issueResponseTimeData, issueResolutionDurationData, issueAgeData, changeRequestsAcceptedData, changeRequestsReviewsData, changeRequestResponseTimeData, changeRequestResolutionDurationData, changeRequestAgeData]);
+  }, [generateCategoryStatCards, selectedCategory, activityData, participantsData, issuesData]);
 
   // 获取分类名称
   const getCategoryName = (category: MetricCategory): string => {
@@ -330,21 +316,7 @@ const Statistics: React.FC = () => {
 
   const currentMetricData = getCurrentMetricData();
 
-  // 生成图表标题
-  const getChartTitle = (baseTitle: string) => {
-    if (timeSelector.mode === 'specific' && timeSelector.specific) {
-      const { year, month } = timeSelector.specific;
-      return `${baseTitle} (${year}年${month}月)`;
-    }
-    
-    const rangeLabels = {
-      'monthly': '月度',
-      'quarterly': '季度', 
-      'yearly': '年度'
-    };
-    
-    return `${baseTitle} (${rangeLabels[timeSelector.range || 'monthly']})`;
-  };
+
 
   return (
     <Layout>

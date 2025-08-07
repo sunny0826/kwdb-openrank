@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { GitBranch, Users, Activity, TrendingUp, Calendar, Github } from 'lucide-react';
+import { Users, Activity, TrendingUp, Calendar, Github } from 'lucide-react';
+import KWDBLogo from '../assets/kwdb.svg';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
 import ChartContainer from '../components/ChartContainer';
@@ -84,7 +85,7 @@ const Home: React.FC = () => {
   }, []);
 
   // 生成统计卡片数据
-  const generateStatCards = (selector: TimeSelector = timeSelector): StatCardType[] => {
+  const generateStatCards = useCallback((selector: TimeSelector = timeSelector): StatCardType[] => {
     let openRankSummary;
     let activitySummary;
     let participantsSummary;
@@ -138,12 +139,12 @@ const Home: React.FC = () => {
         description: '项目的参与者总数',
       },
     ];
-  };
+  }, [openRankData, activityData, participantsData, timeSelector]);
 
   // 生成趋势图表数据
-  const generateTrendChartData = (selector: TimeSelector = timeSelector): ChartDataPoint[] => {
+  const generateTrendChartData = useCallback((selector: TimeSelector = timeSelector): ChartDataPoint[] => {
     return generateChartDataByTimeSelector(openRankData, selector);
-  };
+  }, [openRankData, timeSelector]);
 
   // 监听timeSelector变化，重新生成统计数据
   useEffect(() => {
@@ -153,7 +154,7 @@ const Home: React.FC = () => {
       setStatCards(newStatCards);
       setTrendChartData(newTrendChartData);
     }
-  }, [timeSelector, openRankData, activityData, participantsData]);
+  }, [timeSelector, openRankData, activityData, participantsData, generateStatCards, generateTrendChartData]);
 
   if (loadingState.isLoading) {
     return (
@@ -188,8 +189,8 @@ const Home: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center justify-center w-16 h-16 bg-blue-600 rounded-xl">
-                <GitBranch className="w-8 h-8 text-white" />
+              <div className="flex items-center justify-center w-16 h-16 bg-white rounded-xl border-2 border-blue-600">
+                <img src={KWDBLogo} alt="KWDB Logo" className="w-12 h-12" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">

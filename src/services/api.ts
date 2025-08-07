@@ -38,6 +38,7 @@ export class OpenDiggerAPI {
         status: 'success',
       };
     } catch (error: unknown) {
+      console.error('API调用失败:', error);
       return {
         data: {} as ProjectMeta,
         status: 'error',
@@ -286,7 +287,8 @@ export class OpenDiggerAPI {
         data: response.data,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据
       const mockData: StatisticsData = {
         '2023': 3,
@@ -333,7 +335,8 @@ export class OpenDiggerAPI {
         data: response.data,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据
       const mockData: StatisticsData = {
         '2023': 8,
@@ -380,11 +383,11 @@ export class OpenDiggerAPI {
         data: response.data,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         data: {},
         status: 'error',
-        message: error.message || '获取贡献者缺席因素详情数据失败',
+        message: error instanceof Error ? error.message : '获取贡献者缺席因素详情数据失败',
       };
     }
   }
@@ -400,10 +403,11 @@ export class OpenDiggerAPI {
         data: response.data,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据
       const mockData: StatisticsData = {
-        '2023': 45,
+        '2023': 125,
         '2023-01': 3,
         '2023-02': 4,
         '2023-03': 5,
@@ -447,10 +451,11 @@ export class OpenDiggerAPI {
         data: response.data,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据
       const mockData: StatisticsData = {
-        '2023': 128,
+        '2023': 285,
         '2023-01': 8,
         '2023-02': 12,
         '2023-03': 15,
@@ -508,7 +513,8 @@ export class OpenDiggerAPI {
         data: processedData,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据（小时）
       const mockData: StatisticsData = {
         '2023': 24.5,
@@ -569,7 +575,8 @@ export class OpenDiggerAPI {
         data: processedData,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据（天）
       const mockData: StatisticsData = {
         '2023': 7.2,
@@ -630,7 +637,8 @@ export class OpenDiggerAPI {
         data: processedData,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据（天）
       const mockData: StatisticsData = {
         '2023': 15.8,
@@ -678,7 +686,8 @@ export class OpenDiggerAPI {
         data: response.data,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据
       const mockData: StatisticsData = {
         '2023': 38,
@@ -725,7 +734,8 @@ export class OpenDiggerAPI {
         data: response.data,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据
       const mockData: StatisticsData = {
         '2023': 95,
@@ -786,7 +796,8 @@ export class OpenDiggerAPI {
         data: processedData,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据（小时）
       const mockData: StatisticsData = {
         '2023': 18.7,
@@ -847,7 +858,8 @@ export class OpenDiggerAPI {
         data: processedData,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据（天）
       const mockData: StatisticsData = {
         '2023': 3.8,
@@ -908,7 +920,8 @@ export class OpenDiggerAPI {
         data: processedData,
         status: 'success',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('API调用失败:', error);
       // 提供模拟数据（天）
       const mockData: StatisticsData = {
         '2023': 12.5,
@@ -1032,6 +1045,78 @@ export class OpenDiggerAPI {
   }
 
   /**
+   * 重试请求的辅助函数
+   */
+  private static async retryRequest<T>(requestFn: () => Promise<T>, maxRetries: number = 3, delay: number = 1000): Promise<T> {
+    let lastError: Error;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        
+        // 检查是否为不可重试的错误
+        const isRetryableError = this.isRetryableError(lastError);
+        
+        // 如果是最后一次尝试或不可重试的错误，直接抛出错误
+        if (attempt === maxRetries || !isRetryableError) {
+          throw lastError;
+        }
+        
+        // 对于ERR_ABORTED错误，使用更长的延迟
+        const retryDelay = lastError.message.includes('ERR_ABORTED') ? delay * 2 : delay;
+        
+        // 等待一段时间后重试
+        await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+      }
+    }
+    
+    throw lastError!;
+  }
+
+  /**
+   * 判断错误是否可以重试
+   */
+  private static isRetryableError(error: Error): boolean {
+    const errorMessage = error.message.toLowerCase();
+    const errorName = error.name.toLowerCase();
+    
+    // 可重试的错误类型
+    const retryableErrors = [
+      'err_aborted',
+      'err_network',
+      'err_internet_disconnected',
+      'err_connection_reset',
+      'timeout',
+      'network error'
+    ];
+    
+    // 不可重试的错误类型
+    const nonRetryableErrors = [
+      '404',
+      '403',
+      '401',
+      'not found',
+      'unauthorized',
+      'forbidden'
+    ];
+    
+    // 检查是否为不可重试错误
+    if (nonRetryableErrors.some(err => errorMessage.includes(err))) {
+      return false;
+    }
+    
+    // 检查是否为可重试错误
+    return retryableErrors.some(err => errorMessage.includes(err) || errorName.includes(err));
+  }
+
+  // 请求缓存，避免重复请求
+  private static requestCache = new Map<string, Promise<{ openRankData: StatisticsData; activityData: StatisticsData; participantsData: StatisticsData; status: string }>>();
+  private static cacheExpiry = new Map<string, number>();
+  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+  /**
    * 获取指定项目的核心数据（用于项目对比）
    * @param platform 平台类型 (github/gitee)
    * @param owner 项目所有者
@@ -1039,28 +1124,110 @@ export class OpenDiggerAPI {
    */
   static async getProjectData(platform: string, owner: string, repo: string) {
     const projectPath = `${platform}/${owner}/${repo}`;
+    const cacheKey = `project_data_${projectPath}`;
+    
+    // 检查缓存
+    const now = Date.now();
+    const cachedExpiry = this.cacheExpiry.get(cacheKey);
+    if (cachedExpiry && now < cachedExpiry && this.requestCache.has(cacheKey)) {
+      try {
+        return await this.requestCache.get(cacheKey);
+      } catch {
+        // 缓存的请求失败，清除缓存并重新请求
+        this.requestCache.delete(cacheKey);
+        this.cacheExpiry.delete(cacheKey);
+      }
+    }
+    
+    // 创建新的请求
+    const requestPromise = this.fetchProjectDataInternal(projectPath);
+    
+    // 缓存请求
+    this.requestCache.set(cacheKey, requestPromise);
+    this.cacheExpiry.set(cacheKey, now + this.CACHE_DURATION);
     
     try {
-      const [openrankResponse, activityResponse, participantsResponse] = await Promise.all([
-        apiClient.get(`/${projectPath}/openrank.json`),
-        apiClient.get(`/${projectPath}/activity.json`),
-        apiClient.get(`/${projectPath}/participants.json`)
-      ]);
+      const result = await requestPromise;
+      return result;
+    } catch (error) {
+      // 请求失败时清除缓存
+      console.error(`API请求失败: ${projectPath}`, error);
+      this.requestCache.delete(cacheKey);
+      this.cacheExpiry.delete(cacheKey);
+      throw error;
+    }
+  }
+
+  /**
+   * 内部获取项目数据的方法
+   */
+  private static async fetchProjectDataInternal(projectPath: string) {
+    try {
+      // 创建带超时控制的请求函数
+      const createRequest = (url: string) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 增加到10秒超时
+        
+        return apiClient.get(url, { signal: controller.signal })
+          .finally(() => clearTimeout(timeoutId));
+      };
+
+      // 使用重试机制获取数据，但减少并发请求
+      const requests = [
+        this.retryRequest(() => createRequest(`/${projectPath}/openrank.json`)),
+        this.retryRequest(() => createRequest(`/${projectPath}/activity.json`)),
+        this.retryRequest(() => createRequest(`/${projectPath}/participants.json`))
+      ];
+      
+      // 使用Promise.allSettled避免一个请求失败影响其他请求
+      const results = await Promise.allSettled(requests);
+      
+      const [openrankResult, activityResult, participantsResult] = results;
+      
+      const openRankData = openrankResult.status === 'fulfilled' ? openrankResult.value.data || {} : {};
+      const activityData = activityResult.status === 'fulfilled' ? activityResult.value.data || {} : {};
+      const participantsData = participantsResult.status === 'fulfilled' ? participantsResult.value.data || {} : {};
+      
+      // 如果所有请求都失败，抛出错误
+      if (results.every(result => result.status === 'rejected')) {
+        throw new Error('所有数据请求都失败了');
+      }
 
       return {
-        openRankData: openrankResponse.data,
-        activityData: activityResponse.data,
-        participantsData: participantsResponse.data,
+        openRankData,
+        activityData,
+        participantsData,
         status: 'success'
       };
     } catch (error: unknown) {
       console.error(`获取项目 ${projectPath} 数据失败:`, error);
+      
+      // 根据错误类型提供更具体的错误信息
+      let errorMessage = '获取项目数据失败';
+      if (error instanceof Error) {
+        if (error.name === 'AbortError' || error.message.includes('ERR_ABORTED')) {
+          errorMessage = '请求被中断或超时，请稍后重试';
+        } else if (error.message.includes('Network Error') || error.message.includes('ERR_NETWORK')) {
+          errorMessage = '网络连接失败，请检查网络状态';
+        } else if (error.message.includes('ERR_INSUFFICIENT_RESOURCES')) {
+          errorMessage = '服务器资源不足，请稍后重试';
+        } else if (error.message.includes('404')) {
+          errorMessage = '项目不存在或无法访问';
+        } else if (error.message.includes('403')) {
+          errorMessage = '访问被拒绝，可能是权限问题';
+        } else if (error.message.includes('500')) {
+          errorMessage = '服务器内部错误，请稍后重试';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       return {
         openRankData: {},
         activityData: {},
         participantsData: {},
         status: 'error',
-        message: error instanceof Error ? error.message : '获取项目数据失败'
+        message: errorMessage
       };
     }
   }

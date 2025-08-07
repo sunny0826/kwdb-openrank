@@ -38,12 +38,22 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
   // 自定义 Tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{
+      color: string;
+      name: string;
+      value: number;
+    }>;
+    label?: string;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900 mb-1">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} className="text-sm text-gray-600">
               <span className="font-medium" style={{ color: entry.color }}>
                 {entry.name}: {formatNumber(entry.value)}
