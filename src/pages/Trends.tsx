@@ -13,17 +13,17 @@ import {
   StatCard as StatCardType,
   ChartDataPoint,
   LoadingState,
-  TimeRange,
-  SpecificMonth 
+  TimeSelector
 } from '../types';
 import { 
   calculateMetricsSummary, 
   processTimeSeriesData, 
   convertToChartData,
-  filterDataByTimeRange,
   calculateStatistics,
   convertDataForChart,
-  filterDataBySpecificMonth 
+  generateChartDataByTimeSelector,
+  generateStatCardsByTimeSelector,
+  getAvailableMonths
 } from '../utils/dataProcessor';
 
 type ComparisonPeriod = {
@@ -37,8 +37,10 @@ const Trends: React.FC = () => {
   const [activityData, setActivityData] = useState<StatisticsData>({});
   const [participantsData, setParticipantsData] = useState<StatisticsData>({});
   const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: true });
-  const [timeRange, setTimeRange] = useState<TimeRange>('monthly');
-  const [selectedMonth, setSelectedMonth] = useState<SpecificMonth | null>(null);
+  const [timeSelector, setTimeSelector] = useState<TimeSelector>({
+    mode: 'range',
+    range: 'monthly'
+  });
   const [comparisonMode, setComparisonMode] = useState<'single' | 'comparison'>('single');
   const [selectedPeriods, setSelectedPeriods] = useState<ComparisonPeriod[]>([]);
 
@@ -154,64 +156,39 @@ const Trends: React.FC = () => {
     loadData();
   }, []);
 
+  // 获取可用月份
+  const availableMonths = getAvailableMonths(openRankData);
+
   // 状态管理：趋势统计卡片数据
   const [trendStatCards, setTrendStatCards] = useState<StatCardType[]>([]);
 
   // 生成趋势统计卡片
   const generateTrendStatCards = (): StatCardType[] => {
-    // 根据选择的月份或时间范围过滤数据
-    const filteredOpenRankData = selectedMonth 
-      ? filterDataBySpecificMonth(openRankData, {
-          year: parseInt(selectedMonth.split('-')[0]),
-          month: parseInt(selectedMonth.split('-')[1])
-        })
-      : filterDataByTimeRange(openRankData, timeRange);
-    const filteredActivityData = selectedMonth 
-      ? filterDataBySpecificMonth(activityData, {
-          year: parseInt(selectedMonth.split('-')[0]),
-          month: parseInt(selectedMonth.split('-')[1])
-        })
-      : filterDataByTimeRange(activityData, timeRange);
-    const filteredParticipantsData = selectedMonth 
-      ? filterDataBySpecificMonth(participantsData, {
-          year: parseInt(selectedMonth.split('-')[0]),
-          month: parseInt(selectedMonth.split('-')[1])
-        })
-      : filterDataByTimeRange(participantsData, timeRange);
-
-    const openRankSummary = calculateMetricsSummary(filteredOpenRankData);
-    const activitySummary = calculateMetricsSummary(filteredActivityData);
-    const participantsSummary = calculateMetricsSummary(filteredParticipantsData);
-
-    return [
-      {
-        title: 'OpenRank 趋势',
-        value: openRankSummary.currentValue,
-        change: openRankSummary.changePercentage,
-        trend: openRankSummary.trend,
-        description: selectedMonth 
-          ? `${selectedMonth} 数据` 
-          : `${openRankSummary.totalPeriods} 个月数据`,
-      },
-      {
-        title: '活跃度趋势',
-        value: activitySummary.currentValue,
-        change: activitySummary.changePercentage,
-        trend: activitySummary.trend,
-        description: selectedMonth 
-          ? `${selectedMonth} 数据` 
-          : `${activitySummary.totalPeriods} 个月数据`,
-      },
-      {
-        title: '参与者趋势',
-        value: participantsSummary.currentValue,
-        change: participantsSummary.changePercentage,
-        trend: participantsSummary.trend,
-        description: selectedMonth 
-          ? `${selectedMonth} 数据` 
-          : `${participantsSummary.totalPeriods} 个月数据`,
-      },
+    const dataConfigs = [
+      { title: 'OpenRank 趋势', data: openRankData, color: '#3b82f6', key: 'openrank', description: 'OpenRank 指标趋势分析' },
+      { title: '活跃度趋势', data: activityData, color: '#10b981', key: 'activity', description: '项目活跃度趋势分析' },
+      { title: '参与者趋势', data: participantsData, color: '#8b5cf6', key: 'participants', description: '参与者数量趋势分析' }
     ];
+
+    return dataConfigs.map(config => {
+      const cardConfigs = [{
+        title: config.title,
+        key: config.key,
+        description: config.description,
+        icon: 'TrendingUp',
+        color: config.color
+      }];
+      
+      const cards = generateStatCardsByTimeSelector(config.data, timeSelector, cardConfigs);
+      
+      return cards[0] || {
+         title: config.title,
+         value: '0',
+         change: 0,
+         trend: 'stable' as const,
+         description: config.description
+       };
+    });
   };
 
   // 监听时间选择器变化，重新生成统计数据
@@ -220,42 +197,13 @@ const Trends: React.FC = () => {
       const newTrendStatCards = generateTrendStatCards();
       setTrendStatCards(newTrendStatCards);
     }
-  }, [selectedMonth, timeRange, openRankData, activityData, participantsData]);
+  }, [timeSelector, openRankData, activityData, participantsData]);
 
   // 生成综合趋势图表数据
   const generateComprehensiveTrendData = (): ChartDataPoint[] => {
-    // 根据选择的月份或时间范围过滤数据
-    const filteredOpenRankData = selectedMonth 
-      ? filterDataBySpecificMonth(openRankData, {
-          year: parseInt(selectedMonth.split('-')[0]),
-          month: parseInt(selectedMonth.split('-')[1])
-        })
-      : filterDataByTimeRange(openRankData, timeRange);
-    const filteredActivityData = selectedMonth 
-      ? filterDataBySpecificMonth(activityData, {
-          year: parseInt(selectedMonth.split('-')[0]),
-          month: parseInt(selectedMonth.split('-')[1])
-        })
-      : filterDataByTimeRange(activityData, timeRange);
-    const filteredParticipantsData = selectedMonth 
-      ? filterDataBySpecificMonth(participantsData, {
-          year: parseInt(selectedMonth.split('-')[0]),
-          month: parseInt(selectedMonth.split('-')[1])
-        })
-      : filterDataByTimeRange(participantsData, timeRange);
-
-    const openRankTimeSeriesData = processTimeSeriesData(filteredOpenRankData, timeRange);
-    const activityTimeSeriesData = processTimeSeriesData(filteredActivityData, timeRange);
-    const participantsTimeSeriesData = processTimeSeriesData(filteredParticipantsData, timeRange);
-    
-    const finalFilteredOpenRankData = filterDataByTimeRange(filteredOpenRankData, timeRange);
-    const finalFilteredActivityData = filterDataByTimeRange(filteredActivityData, timeRange);
-    const finalFilteredParticipantsData = filterDataByTimeRange(filteredParticipantsData, timeRange);
-    
-    // 转换为图表数据格式
-     const openRankChartData = convertDataForChart(finalFilteredOpenRankData);
-     const activityChartData = convertDataForChart(finalFilteredActivityData);
-     const participantsChartData = convertDataForChart(finalFilteredParticipantsData);
+    const openRankChartData = generateChartDataByTimeSelector(openRankData, timeSelector);
+    const activityChartData = generateChartDataByTimeSelector(activityData, timeSelector);
+    const participantsChartData = generateChartDataByTimeSelector(participantsData, timeSelector);
     
     // 合并所有数据集
     const combinedData: ChartDataPoint[] = [];
@@ -352,10 +300,18 @@ const Trends: React.FC = () => {
 
   // 生成图表标题
   const getChartTitle = (baseTitle: string) => {
-    if (selectedMonth) {
-      return `${baseTitle} (${selectedMonth})`;
+    if (timeSelector.mode === 'specific' && timeSelector.specific) {
+      const { year, month } = timeSelector.specific;
+      return `${baseTitle} (${year}年${month}月)`;
     }
-    return `${baseTitle} (${timeRange})`;
+    
+    const rangeLabels = {
+      'monthly': '月度',
+      'quarterly': '季度', 
+      'yearly': '年度'
+    };
+    
+    return `${baseTitle} (${rangeLabels[timeSelector.range || 'monthly']})`;
   };
 
   return (
@@ -385,25 +341,9 @@ const Trends: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-4 sm:space-y-0">
           <h2 className="text-xl font-semibold text-gray-900">趋势统计概览</h2>
           <MonthSelector
-            value={{
-              mode: selectedMonth ? 'specific' : 'range',
-              range: timeRange,
-              specific: selectedMonth ? {
-                year: parseInt(selectedMonth.split('-')[0]),
-                month: parseInt(selectedMonth.split('-')[1])
-              } : undefined
-            }}
-            onChange={(selector) => {
-              if (selector.mode === 'specific' && selector.specific) {
-                const monthStr = `${selector.specific.year}-${selector.specific.month.toString().padStart(2, '0')}`;
-                setSelectedMonth(monthStr);
-              } else {
-                setSelectedMonth(null);
-                if (selector.range) {
-                  setTimeRange(selector.range);
-                }
-              }
-            }}
+            value={timeSelector}
+            onChange={setTimeSelector}
+            availableMonths={availableMonths}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -411,14 +351,7 @@ const Trends: React.FC = () => {
             <StatCard 
               key={index} 
               data={card} 
-              timeSelector={{
-                mode: selectedMonth ? 'specific' : 'range',
-                range: timeRange,
-                specific: selectedMonth ? {
-                  year: parseInt(selectedMonth.split('-')[0]),
-                  month: parseInt(selectedMonth.split('-')[1])
-                } : undefined
-              }}
+              timeSelector={timeSelector}
             />
           ))}
         </div>
@@ -515,15 +448,7 @@ const Trends: React.FC = () => {
                 <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
               <ChartContainer
-                data={convertToChartData(processTimeSeriesData(
-                  selectedMonth 
-                    ? filterDataBySpecificMonth(openRankData, {
-                        year: parseInt(selectedMonth.split('-')[0]),
-                        month: parseInt(selectedMonth.split('-')[1])
-                      })
-                    : filterDataByTimeRange(openRankData, timeRange), 
-                  timeRange
-                ))}
+                data={generateChartDataByTimeSelector(openRankData, timeSelector)}
                 config={{
                   title: getChartTitle('OpenRank 历史趋势'),
                   type: 'area',
@@ -543,15 +468,7 @@ const Trends: React.FC = () => {
                 <BarChart3 className="w-5 h-5 text-green-600" />
               </div>
               <ChartContainer
-                data={convertToChartData(processTimeSeriesData(
-                  selectedMonth 
-                    ? filterDataBySpecificMonth(activityData, {
-                        year: parseInt(selectedMonth.split('-')[0]),
-                        month: parseInt(selectedMonth.split('-')[1])
-                      })
-                    : filterDataByTimeRange(activityData, timeRange), 
-                  timeRange
-                ))}
+                data={generateChartDataByTimeSelector(activityData, timeSelector)}
                 config={{
                   title: getChartTitle('活跃度历史趋势'),
                   type: 'area',

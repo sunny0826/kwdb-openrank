@@ -12,22 +12,24 @@ import {
   StatCard as StatCardType,
   ChartDataPoint,
   LoadingState,
-  TimeRange,
-  SpecificMonth 
+  TimeSelector
 } from '../types';
 import { 
   calculateMetricsSummary, 
   processTimeSeriesData, 
   convertToChartData,
-  filterDataByTimeRange,
-  filterDataBySpecificMonth 
+  filterDataByTimeSelector,
+  generateChartDataByTimeSelector,
+  getAvailableMonths
 } from '../utils/dataProcessor';
 
 const OpenRank: React.FC = () => {
   const [globalOpenRankData, setGlobalOpenRankData] = useState<OpenRankData>({});
   const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: true });
-  const [timeRange, setTimeRange] = useState<TimeRange>('monthly');
-  const [selectedMonth, setSelectedMonth] = useState<SpecificMonth | null>(null);
+  const [timeSelector, setTimeSelector] = useState<TimeSelector>({
+    mode: 'range',
+    range: 'monthly'
+  });
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('area');
   
   // 状态变量用于存储计算后的数据
@@ -61,7 +63,7 @@ const OpenRank: React.FC = () => {
     loadData();
   }, []);
 
-  // 监听selectedMonth和timeRange变化，重新生成统计数据
+  // 监听timeSelector变化，重新生成统计数据
   useEffect(() => {
     if (Object.keys(globalOpenRankData).length > 0) {
       const newStatCards = generateStatCards();
@@ -69,24 +71,21 @@ const OpenRank: React.FC = () => {
       setStatCards(newStatCards);
       setChartData(newChartData);
     }
-  }, [selectedMonth, timeRange, globalOpenRankData]);
+  }, [timeSelector, globalOpenRankData]);
 
   // 生成统计卡片数据
   const generateStatCards = (): StatCardType[] => {
-    let filteredGlobalData;
-    
-    if (selectedMonth) {
-      // 具体月份模式：根据选择的月份过滤数据
-      filteredGlobalData = filterDataBySpecificMonth(globalOpenRankData, {
-        year: parseInt(selectedMonth.split('-')[0]),
-        month: parseInt(selectedMonth.split('-')[1])
-      });
-    } else {
-      // 范围视图模式：根据timeRange处理数据，不进行月份过滤
-      filteredGlobalData = filterDataByTimeRange(globalOpenRankData, timeRange);
-    }
-
+    const filteredGlobalData = filterDataByTimeSelector(globalOpenRankData, timeSelector);
     const globalSummary = calculateMetricsSummary(filteredGlobalData);
+
+    const getDescription = () => {
+      if (timeSelector.mode === 'specific' && timeSelector.specific) {
+        return `${timeSelector.specific.year}年${timeSelector.specific.month}月 数据`;
+      }
+      const rangeText = timeSelector.range === 'monthly' ? '月度' : 
+                       timeSelector.range === 'quarterly' ? '季度' : '年度';
+      return `${rangeText}视图数据`;
+    };
 
     return [
       {
@@ -94,9 +93,7 @@ const OpenRank: React.FC = () => {
         value: `${globalSummary.currentValue.toFixed(2)} 分`,
         change: globalSummary.changePercentage,
         trend: globalSummary.trend,
-        description: selectedMonth 
-          ? `${selectedMonth} 数据` 
-          : `${timeRange === 'monthly' ? '月度' : timeRange === 'quarterly' ? '季度' : '年度'}视图数据`,
+        description: getDescription(),
       },
       {
         title: '最高值',
@@ -118,23 +115,7 @@ const OpenRank: React.FC = () => {
 
   // 生成图表数据
   const generateChartData = () => {
-    let filteredGlobalData;
-    
-    if (selectedMonth) {
-      // 具体月份模式：根据选择的月份过滤数据
-      filteredGlobalData = filterDataBySpecificMonth(globalOpenRankData, {
-        year: parseInt(selectedMonth.split('-')[0]),
-        month: parseInt(selectedMonth.split('-')[1])
-      });
-    } else {
-      // 范围视图模式：使用原始数据，让processTimeSeriesData根据timeRange处理
-      filteredGlobalData = globalOpenRankData;
-    }
-
-    const globalTimeSeriesData = processTimeSeriesData(filteredGlobalData, timeRange);
-    
-    // 转换为图表数据格式
-    return convertToChartData(globalTimeSeriesData);
+    return generateChartDataByTimeSelector(globalOpenRankData, timeSelector);
   };
 
   if (loadingState.isLoading) {
@@ -165,10 +146,12 @@ const OpenRank: React.FC = () => {
 
   // 生成图表标题
   const getChartTitle = () => {
-    if (selectedMonth) {
-      return `OpenRank 趋势 (${selectedMonth})`;
+    if (timeSelector.mode === 'specific' && timeSelector.specific) {
+      return `OpenRank 趋势 (${timeSelector.specific.year}年${timeSelector.specific.month}月)`;
     }
-    return `OpenRank 趋势 (${timeRange})`;
+    const rangeText = timeSelector.range === 'monthly' ? '月度' : 
+                     timeSelector.range === 'quarterly' ? '季度' : '年度';
+    return `OpenRank 趋势 (${rangeText})`;
   };
 
   return (
@@ -198,25 +181,9 @@ const OpenRank: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">核心指标概览</h2>
           <MonthSelector
-            value={{
-              mode: selectedMonth ? 'specific' : 'range',
-              range: timeRange,
-              specific: selectedMonth ? {
-                year: parseInt(selectedMonth.split('-')[0]),
-                month: parseInt(selectedMonth.split('-')[1])
-              } : undefined
-            }}
-            onChange={(selector) => {
-              if (selector.mode === 'specific' && selector.specific) {
-                const monthStr = `${selector.specific.year}-${selector.specific.month.toString().padStart(2, '0')}`;
-                setSelectedMonth(monthStr);
-              } else {
-                setSelectedMonth(null);
-                if (selector.range) {
-                  setTimeRange(selector.range);
-                }
-              }
-            }}
+            value={timeSelector}
+            onChange={setTimeSelector}
+            availableMonths={getAvailableMonths(globalOpenRankData)}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -224,14 +191,7 @@ const OpenRank: React.FC = () => {
             <StatCard 
               key={index} 
               data={card} 
-              timeSelector={{
-                mode: selectedMonth ? 'specific' : 'range',
-                range: timeRange,
-                specific: selectedMonth ? {
-                  year: parseInt(selectedMonth.split('-')[0]),
-                  month: parseInt(selectedMonth.split('-')[1])
-                } : undefined
-              }}
+              timeSelector={timeSelector}
             />
           ))}
         </div>
@@ -240,7 +200,11 @@ const OpenRank: React.FC = () => {
       {/* 图表控制器 */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <h2 className="text-xl font-semibold text-gray-900">OpenRank 趋势</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            OpenRank 趋势 ({timeSelector.mode === 'specific' && timeSelector.specific
+              ? `${timeSelector.specific.year}年${timeSelector.specific.month}月`
+              : timeSelector.range === 'monthly' ? '月度' : timeSelector.range === 'quarterly' ? '季度' : '年度'})
+          </h2>
           <div className="flex items-center space-x-4">
             {/* 图表类型选择器 */}
             <div className="flex items-center space-x-3">

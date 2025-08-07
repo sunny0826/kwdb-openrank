@@ -166,9 +166,7 @@ const MonthSelector: React.FC<MonthSelectorProps> = ({
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }
             `}
-          >
-            具体月份
-          </button>
+          >具体月份</button>
         </div>
 
         {/* 选择器下拉框 */}

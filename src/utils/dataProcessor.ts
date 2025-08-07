@@ -438,3 +438,38 @@ export function generateChartDataByTimeSelector(data: OpenRankData, selector: Ti
     return convertToChartData(timeSeriesData);
   }
 }
+
+/**
+ * 根据时间选择器生成统计卡片数据
+ */
+export function generateStatCardsByTimeSelector(
+  data: OpenRankData, 
+  selector: TimeSelector,
+  cardConfigs: Array<{
+    title: string;
+    key: string;
+    description: string;
+    icon: string;
+    color: string;
+  }>
+): Array<{
+  title: string;
+  value: string;
+  change?: number;
+  trend?: 'up' | 'down' | 'stable';
+  description?: string;
+}> {
+  return cardConfigs.map(config => {
+    const summary = selector.mode === 'specific' && selector.specific
+      ? calculateSpecificMonthSummary(data, selector.specific)
+      : calculateMetricsSummary(filterDataByTimeSelector(data, selector));
+    
+    return {
+      title: config.title,
+      value: formatNumber(summary.currentValue),
+      change: summary.changePercentage,
+      trend: summary.trend,
+      description: config.description
+    };
+  });
+}

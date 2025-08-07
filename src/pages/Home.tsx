@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { GitBranch, Users, Activity, TrendingUp, ExternalLink, Calendar, Github } from 'lucide-react';
+import { GitBranch, Users, Activity, TrendingUp, Calendar, Github } from 'lucide-react';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
 import ChartContainer from '../components/ChartContainer';
@@ -8,23 +8,19 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import MonthSelector from '../components/MonthSelector';
 import { OpenDiggerAPI } from '../services/api';
-import { 
-  ProjectMeta, 
-  OpenRankData, 
-  StatisticsData, 
+import {
+  ProjectMeta,
+  OpenRankData,
+  StatisticsData,
   StatCard as StatCardType,
   ChartDataPoint,
   LoadingState,
-  TimeRange,
   TimeSelector
 } from '../types';
-import { 
-  calculateMetricsSummary,
-  getLatestValue, 
-  processTimeSeriesData, 
+import {
+  processTimeSeriesData,
   convertToChartData,
   getAvailableMonths,
-  filterDataByTimeSelector,
   calculateSpecificMonthSummary,
   generateChartDataByTimeSelector,
   calculateStatistics
@@ -45,36 +41,36 @@ const Home: React.FC = () => {
   // 加载数据
   const loadData = async () => {
     setLoadingState({ isLoading: true });
-    
+
     try {
       const results = await OpenDiggerAPI.getAllMetrics();
-      
+
       if (results.meta.status === 'success') {
         setProjectMeta(results.meta.data);
       }
-      
+
       if (results.openrank.status === 'success') {
         setOpenRankData(results.openrank.data);
       }
-      
 
-      
+
+
       if (results.activity.status === 'success') {
         setActivityData(results.activity.data);
       }
-      
+
       if (results.participants.status === 'success') {
         setParticipantsData(results.participants.data);
       }
-      
+
       setLoadingState({ isLoading: false });
-    } catch (error: any) {
-      setLoadingState({ 
-        isLoading: false, 
-        error: { 
-          code: 'FETCH_ERROR', 
-          message: error.message || '数据加载失败' 
-        } 
+    } catch (error: Error | unknown) {
+      setLoadingState({
+        isLoading: false,
+        error: {
+          code: 'FETCH_ERROR',
+          message: error instanceof Error ? error.message : '数据加载失败'
+        }
       });
     }
   };
@@ -92,31 +88,31 @@ const Home: React.FC = () => {
     let openRankSummary;
     let activitySummary;
     let participantsSummary;
-    
+
     if (selector.mode === 'specific' && selector.specific) {
-       openRankSummary = calculateSpecificMonthSummary(
-         openRankData,
-         selector.specific
-       );
-       activitySummary = calculateSpecificMonthSummary(
-         activityData,
-         selector.specific
-       );
-       participantsSummary = calculateSpecificMonthSummary(
-         participantsData,
-         selector.specific
-       );
+      openRankSummary = calculateSpecificMonthSummary(
+        openRankData,
+        selector.specific
+      );
+      activitySummary = calculateSpecificMonthSummary(
+        activityData,
+        selector.specific
+      );
+      participantsSummary = calculateSpecificMonthSummary(
+        participantsData,
+        selector.specific
+      );
     } else {
       const timeRange = selector.range || 'monthly';
       openRankSummary = calculateStatistics(
-         convertToChartData(processTimeSeriesData(openRankData, timeRange))
-       );
+        convertToChartData(processTimeSeriesData(openRankData, timeRange))
+      );
       activitySummary = calculateStatistics(
-         convertToChartData(processTimeSeriesData(activityData, timeRange))
-       );
+        convertToChartData(processTimeSeriesData(activityData, timeRange))
+      );
       participantsSummary = calculateStatistics(
-         convertToChartData(processTimeSeriesData(participantsData, timeRange))
-       );
+        convertToChartData(processTimeSeriesData(participantsData, timeRange))
+      );
     }
 
     return [
@@ -173,8 +169,8 @@ const Home: React.FC = () => {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto">
-          <ErrorMessage 
-            error={loadingState.error} 
+          <ErrorMessage
+            error={loadingState.error}
             onRetry={loadData}
             className="mt-8"
           />
@@ -226,7 +222,7 @@ const Home: React.FC = () => {
                 className="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.15a.592.592 0 0 1-.592-.592v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296z"/>
+                  <path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.15a.592.592 0 0 1-.592-.592v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296z" />
                 </svg>
                 <span>Gitee</span>
               </a>
@@ -265,9 +261,9 @@ const Home: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 auto-rows-fr">
           {statCards.map((card, index) => (
-            <StatCard 
-              key={index} 
-              data={card} 
+            <StatCard
+              key={index}
+              data={card}
               className="transform hover:scale-105 transition-transform duration-200"
               timeSelector={timeSelector}
             />
@@ -279,9 +275,9 @@ const Home: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            OpenRank 趋势 ({timeSelector.mode === 'specific' && timeSelector.specific 
-               ? `${timeSelector.specific.year}年${timeSelector.specific.month}月` 
-               : timeSelector.range === 'monthly' ? '月度' : timeSelector.range === 'quarterly' ? '季度' : '年度'})
+            OpenRank 趋势 ({timeSelector.mode === 'specific' && timeSelector.specific
+              ? `${timeSelector.specific.year}年${timeSelector.specific.month}月`
+              : timeSelector.range === 'monthly' ? '月度' : timeSelector.range === 'quarterly' ? '季度' : '年度'})
           </h2>
           <Link
             to="/openrank"
@@ -294,9 +290,9 @@ const Home: React.FC = () => {
         <ChartContainer
           data={trendChartData}
           config={{
-            title: `OpenRank ${timeSelector.mode === 'specific' && timeSelector.specific 
-               ? `${timeSelector.specific.year}年${timeSelector.specific.month}月趋势` 
-               : timeSelector.range === 'monthly' ? '月度' : timeSelector.range === 'quarterly' ? '季度' : '年度'}趋势`,
+            title: `OpenRank ${timeSelector.mode === 'specific' && timeSelector.specific
+              ? `${timeSelector.specific.year}年${timeSelector.specific.month}月趋势`
+              : timeSelector.range === 'monthly' ? '月度' : timeSelector.range === 'quarterly' ? '季度' : '年度'}趋势`,
             type: 'area',
             dataKey: 'value',
             color: '#3b82f6',

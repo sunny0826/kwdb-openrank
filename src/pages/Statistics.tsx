@@ -29,8 +29,7 @@ import {
   StatCard as StatCardType,
   ChartDataPoint,
   LoadingState,
-  TimeRange,
-  SpecificMonth,
+  TimeSelector,
   MetricConfig,
   MetricCategory
 } from '../types';
@@ -39,9 +38,9 @@ import {
   getLatestValue,
   processTimeSeriesData, 
   convertToChartData,
-  filterDataByTimeRange,
-  convertDataForChart,
-  filterDataBySpecificMonth 
+  generateChartDataByTimeSelector,
+  generateStatCardsByTimeSelector,
+  getAvailableMonths
 } from '../utils/dataProcessor';
 
 const Statistics: React.FC = () => {
@@ -72,8 +71,10 @@ const Statistics: React.FC = () => {
   const [changeRequestAgeData, setChangeRequestAgeData] = useState<StatisticsData>({});
   
   const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: true });
-  const [timeRange, setTimeRange] = useState<TimeRange>('monthly');
-  const [selectedMonth, setSelectedMonth] = useState<SpecificMonth | null>(null);
+  const [timeSelector, setTimeSelector] = useState<TimeSelector>({
+    mode: 'range',
+    range: 'monthly'
+  });
   const [selectedCategory, setSelectedCategory] = useState<MetricCategory>('general');
   const [selectedMetric, setSelectedMetric] = useState<string>('activity');
 
@@ -218,19 +219,8 @@ const Statistics: React.FC = () => {
     return dataMap[key] || {};
   };
 
-  // 过滤数据
-  const filterData = (data: StatisticsData): StatisticsData => {
-    if (selectedMonth) {
-      // 具体月份模式
-      return filterDataBySpecificMonth(data, {
-        year: parseInt(selectedMonth.split('-')[0]),
-        month: parseInt(selectedMonth.split('-')[1])
-      });
-    } else {
-      // 范围视图模式，根据timeRange过滤数据
-      return filterDataByTimeRange(data, timeRange);
-    }
-  };
+  // 获取可用月份
+  const availableMonths = getAvailableMonths(activityData);
 
   // 状态管理：分类统计卡片数据
   const [currentCategoryCards, setCurrentCategoryCards] = useState<StatCardType[]>([]);
@@ -241,35 +231,22 @@ const Statistics: React.FC = () => {
     
     return categoryConfigs.map(config => {
       const rawData = getDataByKey(config.key);
-      const data = filterData(rawData);
-      const summary = calculateMetricsSummary(data);
-      const latestValue = getLatestValue(data);
-      
-      // 使用最新值或当前值，优先使用latestValue
-      let value = latestValue || summary.currentValue || 0;
-      let displayValue: string | number = value;
-      
-      // 确保值是有效数字
-      if (typeof value === 'number' && !isNaN(value) && value > 0) {
-        // 添加单位
-        if (config.unit) {
-          displayValue = `${value.toFixed(1)} ${config.unit}`;
-        } else {
-          displayValue = value;
-        }
-      } else {
-        // 如果没有有效数据，显示0
-        displayValue = config.unit ? `0.0 ${config.unit}` : 0;
-      }
-      
-      return {
+      const cardConfigs = [{
         title: config.name,
-        value: displayValue,
-        change: summary.changePercentage,
-        trend: summary.trend,
-        description: selectedMonth 
-          ? `${selectedMonth} 数据` 
-          : config.description || `${config.name}统计`,
+        key: config.key,
+        description: config.description || `${config.name}统计`,
+        icon: 'TrendingUp',
+        color: config.color
+      }];
+      
+      const cards = generateStatCardsByTimeSelector(rawData, timeSelector, cardConfigs);
+      
+      return cards[0] || {
+        title: config.name,
+        value: config.unit ? `0.0 ${config.unit}` : '0',
+        change: 0,
+        trend: 'stable' as const,
+        description: config.description || `${config.name}统计`
       };
     });
   };
@@ -285,7 +262,7 @@ const Statistics: React.FC = () => {
       const newCategoryCards = generateCategoryStatCards(selectedCategory);
       setCurrentCategoryCards(newCategoryCards);
     }
-  }, [selectedMonth, timeRange, selectedCategory, activityData, participantsData, issuesData, changeRequestsData, newContributorsData, contributorsData, inactiveContributorsData, busFactorData, issuesClosedData, issueCommentsData, issueResponseTimeData, issueResolutionDurationData, issueAgeData, changeRequestsAcceptedData, changeRequestsReviewsData, changeRequestResponseTimeData, changeRequestResolutionDurationData, changeRequestAgeData]);
+  }, [timeSelector, selectedCategory, activityData, participantsData, issuesData, changeRequestsData, newContributorsData, contributorsData, inactiveContributorsData, busFactorData, issuesClosedData, issueCommentsData, issueResponseTimeData, issueResolutionDurationData, issueAgeData, changeRequestsAcceptedData, changeRequestsReviewsData, changeRequestResponseTimeData, changeRequestResolutionDurationData, changeRequestAgeData]);
 
   // 获取分类名称
   const getCategoryName = (category: MetricCategory): string => {
@@ -310,8 +287,9 @@ const Statistics: React.FC = () => {
   };
 
   // 获取当前选中指标的数据
-  const getCurrentMetricData = (): StatisticsData => {
-    return filterData(getDataByKey(selectedMetric));
+  const getCurrentMetricData = (): ChartDataPoint[] => {
+    const rawData = getDataByKey(selectedMetric);
+    return generateChartDataByTimeSelector(rawData, timeSelector);
   };
 
   // 获取指标标题
@@ -350,14 +328,22 @@ const Statistics: React.FC = () => {
     );
   }
 
-  const currentMetricData = convertToChartData(processTimeSeriesData(getCurrentMetricData(), timeRange));
+  const currentMetricData = getCurrentMetricData();
 
   // 生成图表标题
   const getChartTitle = (baseTitle: string) => {
-    if (selectedMonth) {
-      return `${baseTitle} (${selectedMonth})`;
+    if (timeSelector.mode === 'specific' && timeSelector.specific) {
+      const { year, month } = timeSelector.specific;
+      return `${baseTitle} (${year}年${month}月)`;
     }
-    return `${baseTitle} (${timeRange})`;
+    
+    const rangeLabels = {
+      'monthly': '月度',
+      'quarterly': '季度', 
+      'yearly': '年度'
+    };
+    
+    return `${baseTitle} (${rangeLabels[timeSelector.range || 'monthly']})`;
   };
 
   return (
@@ -387,25 +373,9 @@ const Statistics: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <h2 className="text-xl font-semibold text-gray-900">指标概览</h2>
           <MonthSelector
-            value={{
-              mode: selectedMonth ? 'specific' : 'range',
-              range: timeRange,
-              specific: selectedMonth ? {
-                year: parseInt(selectedMonth.split('-')[0]),
-                month: parseInt(selectedMonth.split('-')[1])
-              } : undefined
-            }}
-            onChange={(selector) => {
-              if (selector.mode === 'specific' && selector.specific) {
-                const monthStr = `${selector.specific.year}-${selector.specific.month.toString().padStart(2, '0')}`;
-                setSelectedMonth(monthStr);
-              } else {
-                setSelectedMonth(null);
-                if (selector.range) {
-                  setTimeRange(selector.range);
-                }
-              }
-            }}
+            value={timeSelector}
+            onChange={setTimeSelector}
+            availableMonths={availableMonths}
           />
         </div>
       </div>
@@ -440,14 +410,7 @@ const Statistics: React.FC = () => {
             <StatCard 
               key={index} 
               data={card} 
-              timeSelector={{
-                mode: selectedMonth ? 'specific' : 'range',
-                range: timeRange,
-                specific: selectedMonth ? {
-                  year: parseInt(selectedMonth.split('-')[0]),
-                  month: parseInt(selectedMonth.split('-')[1])
-                } : undefined
-              }}
+              timeSelector={timeSelector}
             />
           ))}
         </div>
