@@ -2,6 +2,8 @@ import React from 'react';
 import { TrendingUp, TrendingDown, Minus, ArrowUp, ArrowDown } from 'lucide-react';
 import { StatCard as StatCardType, TimeSelector } from '../types';
 import { formatNumber, formatPercentage } from '../utils/dataProcessor';
+import MetricTooltip from './MetricTooltip';
+import { getMetricDescriptionByTitle } from '../utils/metricDescriptions';
 
 interface StatCardProps {
   data: StatCardType;
@@ -112,9 +114,21 @@ const StatCard: React.FC<StatCardProps> = ({ data, className = '', variant = 'de
     <div className={`${getCardStyles()} rounded-lg p-4 sm:p-6 transition-all duration-200 group relative overflow-hidden ${className}`}>
       {/* 标题和趋势图标 */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide group-hover:text-gray-700 transition-colors">
-          {title}
-        </h3>
+        <div className="flex items-center space-x-2">
+          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide group-hover:text-gray-700 transition-colors">
+            {title}
+          </h3>
+          {/* 指标说明图标 */}
+          {(() => {
+            const metricDesc = getMetricDescriptionByTitle(title);
+            return metricDesc ? (
+              <MetricTooltip
+                title={metricDesc.title}
+                description={metricDesc.description}
+              />
+            ) : null;
+          })()}
+        </div>
         <div className={`p-2 rounded-full ${getTrendColor()} transition-all duration-200 group-hover:scale-110`}>
           {trend && getTrendIcon()}
         </div>

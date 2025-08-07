@@ -186,8 +186,11 @@ const Home: React.FC = () => {
     <Layout>
       {/* 项目概览 */}
       <div className="mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <div className="flex items-start justify-between">
+        <div className="bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 rounded-2xl shadow-xl border border-gray-100/50 backdrop-blur-sm p-10 relative overflow-hidden">
+          {/* 装饰性背景元素 */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-2xl"></div>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between items-start gap-6 lg:gap-0 relative z-10">
             <div className="flex items-center space-x-4">
               <div className="flex items-center justify-center w-16 h-16 bg-white rounded-xl border-2 border-blue-600">
                 <img src={KWDBLogo} alt="KWDB Logo" className="w-12 h-12" />
@@ -215,36 +218,37 @@ const Home: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-wrap gap-3 sm:gap-4 w-full lg:w-auto justify-start lg:justify-end">
               <a
-                href="https://gitee.com/kwdb/kwdb"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-              >
+                  href="https://gitee.com/kwdb/kwdb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group inline-flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out border border-red-400/20"
+                >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.15a.592.592 0 0 1-.592-.592v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296z" />
                 </svg>
                 <span>Gitee</span>
               </a>
               <a
-                href="https://github.com/kwdb/kwdb"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-              >
+                  href="https://github.com/kwdb/kwdb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group inline-flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out border border-gray-600/20"
+                >
                 <Github className="w-4 h-4" />
                 <span>GitHub</span>
               </a>
               <a
-                href="https://atomgit.com/kwdb/kwdb"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 transition-colors duration-200"
-              >
+                  href="https://atomgit.com/kwdb/kwdb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group inline-flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-white to-gray-50 hover:from-gray-50 hover:to-gray-100 text-gray-800 text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out border border-gray-200/60 backdrop-blur-sm"
+                >
                 <img src="https://res.oafimg.cn/openatom-www/home/assets/logo-300x300-DC-YZyCt.png" alt="OpenAtom" className="w-4 h-4" />
                 <span>AtomGit</span>
               </a>
+
             </div>
           </div>
         </div>
