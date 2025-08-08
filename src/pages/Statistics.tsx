@@ -28,28 +28,33 @@ import {
   generateStatCardsByTimeSelector,
   getAvailableMonths
 } from '../utils/dataProcessor';
+import { getMetricDescription } from '../utils/metricDescriptions';
 
 const Statistics: React.FC = () => {
-  // 基础数据状态
+  // 基础指标数据状态
+  const [openRankData, setOpenRankData] = useState<StatisticsData>({});
   const [activityData, setActivityData] = useState<StatisticsData>({});
   const [participantsData, setParticipantsData] = useState<StatisticsData>({});
   const [issuesData, setIssuesData] = useState<StatisticsData>({});
   const [changeRequestsData, setChangeRequestsData] = useState<StatisticsData>({});
-  
-  // 开发者相关数据状态
+  const [starsData, setStarsData] = useState<StatisticsData>({});
+  const [forksData, setForksData] = useState<StatisticsData>({});
+  const [attentionData, setAttentionData] = useState<StatisticsData>({});
   const [newContributorsData, setNewContributorsData] = useState<StatisticsData>({});
+
+  // 开发者指标数据状态
   const [contributorsData, setContributorsData] = useState<StatisticsData>({});
   const [inactiveContributorsData, setInactiveContributorsData] = useState<StatisticsData>({});
   const [busFactorData, setBusFactorData] = useState<StatisticsData>({});
-  
-  // Issue相关数据状态
+
+  // Issue指标数据状态
   const [issuesClosedData, setIssuesClosedData] = useState<StatisticsData>({});
   const [issueCommentsData, setIssueCommentsData] = useState<StatisticsData>({});
   const [issueResponseTimeData, setIssueResponseTimeData] = useState<StatisticsData>({});
   const [issueResolutionDurationData, setIssueResolutionDurationData] = useState<StatisticsData>({});
   const [issueAgeData, setIssueAgeData] = useState<StatisticsData>({});
-  
-  // 变更请求相关数据状态
+
+  // 变更请求指标数据状态
   const [changeRequestsAcceptedData, setChangeRequestsAcceptedData] = useState<StatisticsData>({});
   const [changeRequestsReviewsData, setChangeRequestsReviewsData] = useState<StatisticsData>({});
   const [changeRequestResponseTimeData, setChangeRequestResponseTimeData] = useState<StatisticsData>({});
@@ -67,10 +72,14 @@ const Statistics: React.FC = () => {
   // 指标配置
   const metricConfigs: MetricConfig[] = useMemo(() => [
     // 基础指标
+    { key: 'openrank', name: 'OpenRank 评分', category: 'general', color: '#dc2626', icon: 'Star' },
     { key: 'activity', name: '项目活跃度', category: 'general', color: '#3b82f6', icon: 'Activity' },
     { key: 'participants', name: '参与者数量', category: 'general', color: '#10b981', icon: 'Users' },
     { key: 'issues_new', name: '新建 Issue', category: 'general', color: '#f59e0b', icon: 'AlertCircle' },
     { key: 'change_requests', name: '变更请求', category: 'general', color: '#8b5cf6', icon: 'GitPullRequest' },
+    { key: 'stars', name: 'Star 数量', category: 'general', color: '#fbbf24', icon: 'Star' },
+    { key: 'forks', name: 'Fork 数量', category: 'general', color: '#6366f1', icon: 'GitFork' },
+    { key: 'attention', name: '关注度', category: 'general', color: '#ec4899', icon: 'Eye' },
     
     // 开发者指标
     { key: 'new_contributors', name: '新贡献者数量', category: 'developer', color: '#06b6d4', icon: 'UserPlus' },
@@ -99,10 +108,14 @@ const Statistics: React.FC = () => {
     
     try {
       const [
+        openRankResult,
         activityResult,
         participantsResult,
         issuesResult,
         changeRequestsResult,
+        starsResult,
+        forksResult,
+        attentionResult,
         newContributorsResult,
         contributorsResult,
         inactiveContributorsResult,
@@ -118,10 +131,14 @@ const Statistics: React.FC = () => {
         changeRequestResolutionDurationResult,
         changeRequestAgeResult,
       ] = await Promise.all([
+        OpenDiggerAPI.getOpenRankData(),
         OpenDiggerAPI.getActivityData(),
         OpenDiggerAPI.getParticipantsData(),
         OpenDiggerAPI.getIssuesData(),
         OpenDiggerAPI.getChangeRequestsData(),
+        OpenDiggerAPI.getStarsData(),
+        OpenDiggerAPI.getForksData(),
+        OpenDiggerAPI.getAttentionData(),
         OpenDiggerAPI.getNewContributorsData(),
         OpenDiggerAPI.getContributorsData(),
         OpenDiggerAPI.getInactiveContributorsData(),
@@ -139,10 +156,14 @@ const Statistics: React.FC = () => {
       ]);
       
       // 设置基础数据
+      if (openRankResult.status === 'success') setOpenRankData(openRankResult.data);
       if (activityResult.status === 'success') setActivityData(activityResult.data);
       if (participantsResult.status === 'success') setParticipantsData(participantsResult.data);
       if (issuesResult.status === 'success') setIssuesData(issuesResult.data);
       if (changeRequestsResult.status === 'success') setChangeRequestsData(changeRequestsResult.data);
+      if (starsResult.status === 'success') setStarsData(starsResult.data);
+      if (forksResult.status === 'success') setForksData(forksResult.data);
+      if (attentionResult.status === 'success') setAttentionData(attentionResult.data);
       
       // 设置开发者数据
       if (newContributorsResult.status === 'success') setNewContributorsData(newContributorsResult.data);
@@ -183,10 +204,14 @@ const Statistics: React.FC = () => {
   // 获取数据映射
   const getDataByKey = useCallback((key: string): StatisticsData => {
     const dataMap: { [key: string]: StatisticsData } = {
+      'openrank': openRankData,
       'activity': activityData,
       'participants': participantsData,
       'issues_new': issuesData,
       'change_requests': changeRequestsData,
+      'stars': starsData,
+      'forks': forksData,
+      'attention': attentionData,
       'new_contributors': newContributorsData,
       'contributors': contributorsData,
       'inactive_contributors': inactiveContributorsData,
@@ -203,7 +228,7 @@ const Statistics: React.FC = () => {
       'change_request_age': changeRequestAgeData,
     };
     return dataMap[key] || {};
-  }, [activityData, participantsData, issuesData, changeRequestsData, newContributorsData, contributorsData, inactiveContributorsData, busFactorData, issuesClosedData, issueCommentsData, issueResponseTimeData, issueResolutionDurationData, issueAgeData, changeRequestsAcceptedData, changeRequestsReviewsData, changeRequestResponseTimeData, changeRequestResolutionDurationData, changeRequestAgeData]);
+  }, [openRankData, activityData, participantsData, issuesData, changeRequestsData, starsData, forksData, attentionData, newContributorsData, contributorsData, inactiveContributorsData, busFactorData, issuesClosedData, issueCommentsData, issueResponseTimeData, issueResolutionDurationData, issueAgeData, changeRequestsAcceptedData, changeRequestsReviewsData, changeRequestResponseTimeData, changeRequestResolutionDurationData, changeRequestAgeData]);
 
   // 获取可用月份
   const availableMonths = getAvailableMonths(activityData);
@@ -424,47 +449,19 @@ const Statistics: React.FC = () => {
         </div>
       </div>
 
-      {/* 指标说明 */}
+      {/* 详细指标说明 */}
       <div className="mt-8">
-        <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">指标说明</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm text-gray-700">
-            <div>
-              <h4 className="font-medium mb-2 flex items-center space-x-2">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                <span>核心指标</span>
-              </h4>
-              <p>
-                项目的基础活跃度、参与者数量、Issue 和变更请求等核心统计指标。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2 flex items-center space-x-2">
-                <Users className="w-4 h-4 text-green-600" />
-                <span>开发者指标</span>
-              </h4>
-              <p>
-                新贡献者、活跃贡献者、不活跃贡献者和贡献者缺席因素等开发者相关统计。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2 flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 text-yellow-600" />
-                <span>Issue 指标</span>
-              </h4>
-              <p>
-                Issue 的创建、关闭、评论、响应时间、解决时长和年龄等详细统计。
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2 flex items-center space-x-2">
-                <GitPullRequest className="w-4 h-4 text-purple-600" />
-                <span>变更请求指标</span>
-              </h4>
-              <p>
-                变更请求的数量、接受率、评审、响应时间、解决时长和年龄等统计。
-              </p>
-            </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">当前分类指标说明</h3>
+          <div className="space-y-4">
+            {metricConfigs.filter(config => config.category === selectedCategory).map(config => (
+              <div key={config.key} className="border-l-4 pl-4" style={{ borderColor: config.color }}>
+                <h4 className="font-medium text-gray-900 mb-1">{config.name}</h4>
+                <p className="text-sm text-gray-600">
+                  {getMetricDescription(config.key)?.description || '暂无说明'}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

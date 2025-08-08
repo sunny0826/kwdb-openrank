@@ -40,6 +40,14 @@ export const metricDescriptions: Record<string, MetricDescription> = {
     updateFrequency: '每月更新一次，统计上个月的 Issue 活动'
   },
   
+  issuesNew: {
+    title: '新建 Issue',
+    description: '新建 Issue 数量统计在特定时间段内创建的问题报告和功能请求总数。反映了用户对项目的关注度和反馈活跃程度。',
+    calculation: '统计指定时间段内新创建的 Issue 数量，包括 bug 报告、功能请求、文档改进等各类问题。',
+    dataSource: 'OpenDigger 平台，基于 GitHub、Gitee 等代码托管平台的 Issue 数据',
+    updateFrequency: '每月更新一次，统计上个月的新建 Issue 情况'
+  },
+  
   pullRequests: {
     title: 'Pull Request 数量',
     description: 'Pull Request 数量反映了项目的代码贡献活跃程度，表示开发者向项目提交代码更改的频率。高 PR 数量通常表明项目有活跃的开发社区和良好的协作流程。',
@@ -106,13 +114,6 @@ export const metricDescriptions: Record<string, MetricDescription> = {
   },
 
   // Issue指标
-  issuesNew: {
-    title: '新建 Issue',
-    description: '新建 Issue 数量统计在特定时间段内创建的问题报告和功能请求总数。反映了用户对项目的关注度和反馈活跃程度。',
-    calculation: '统计指定时间段内新创建的 Issue 数量，包括 bug 报告、功能请求、文档改进等各类问题。',
-    dataSource: 'OpenDigger 平台，基于 GitHub、Gitee 等代码托管平台的 Issue 数据',
-    updateFrequency: '每月更新一次，统计上个月的新建 Issue 情况'
-  },
 
   issuesClosed: {
     title: '关闭 Issue 数量',

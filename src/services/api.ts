@@ -144,6 +144,101 @@ export class OpenDiggerAPI {
     }
   }
 
+  /**
+   * 获取提交数量统计数据
+   */
+  static async getCommitsData(): Promise<ApiResponse<StatisticsData>> {
+    try {
+      const response = await apiClient.get(`/${PROJECT_PATH}/commits.json`);
+      return {
+        data: response.data,
+        status: 'success',
+      };
+    } catch (error: unknown) {
+      return {
+        data: {},
+        status: 'error',
+        message: error instanceof Error ? error.message : '获取提交数据失败',
+      };
+    }
+  }
+
+  /**
+   * 获取Star数量统计数据
+   */
+  static async getStarsData(): Promise<ApiResponse<StatisticsData>> {
+    try {
+      const response = await apiClient.get(`/${PROJECT_PATH}/stars.json`);
+      return {
+        data: response.data,
+        status: 'success',
+      };
+    } catch (error: unknown) {
+      return {
+        data: {},
+        status: 'error',
+        message: error instanceof Error ? error.message : '获取Star数据失败',
+      };
+    }
+  }
+
+  /**
+   * 获取Fork数量统计数据
+   */
+  static async getForksData(): Promise<ApiResponse<StatisticsData>> {
+    try {
+      const response = await apiClient.get(`/${PROJECT_PATH}/technical_fork.json`);
+      return {
+        data: response.data,
+        status: 'success',
+      };
+    } catch (error: unknown) {
+      return {
+        data: {},
+        status: 'error',
+        message: error instanceof Error ? error.message : '获取Fork数据失败',
+      };
+    }
+  }
+
+  /**
+   * 获取关注度统计数据
+   */
+  static async getAttentionData(): Promise<ApiResponse<StatisticsData>> {
+    try {
+      const response = await apiClient.get(`/${PROJECT_PATH}/attention.json`);
+      return {
+        data: response.data,
+        status: 'success',
+      };
+    } catch (error: unknown) {
+      return {
+        data: {},
+        status: 'error',
+        message: error instanceof Error ? error.message : '获取关注度数据失败',
+      };
+    }
+  }
+
+  /**
+   * 获取Pull Request数量统计数据
+   */
+  static async getPullRequestsData(): Promise<ApiResponse<StatisticsData>> {
+    try {
+      const response = await apiClient.get(`/${PROJECT_PATH}/pull_requests.json`);
+      return {
+        data: response.data,
+        status: 'success',
+      };
+    } catch (error: unknown) {
+      return {
+        data: {},
+        status: 'error',
+        message: error instanceof Error ? error.message : '获取Pull Request数据失败',
+      };
+    }
+  }
+
   // 开发者相关指标API
   /**
    * 获取新贡献者数据
