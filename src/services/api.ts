@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { ProjectMeta, OpenRankData, StatisticsData, DetailedStatisticsData, ApiResponse } from '../types';
+import { ProjectMeta, OpenRankData, StatisticsData, DetailedStatisticsData, ApiResponse, ActiveDatesAndTimesData } from '../types';
 
 // OpenDigger API 基础 URL
 const BASE_URL = 'https://oss.open-digger.cn';
@@ -216,6 +216,25 @@ export class OpenDiggerAPI {
         data: {},
         status: 'error',
         message: error instanceof Error ? error.message : '获取关注度数据失败',
+      };
+    }
+  }
+
+  /**
+   * 获取活跃日期和时间数据
+   */
+  static async getActiveDatesAndTimesData(): Promise<ApiResponse<ActiveDatesAndTimesData>> {
+    try {
+      const response = await apiClient.get(`/${PROJECT_PATH}/active_dates_and_times.json`);
+      return {
+        data: response.data,
+        status: 'success',
+      };
+    } catch (error: unknown) {
+      return {
+        data: {},
+        status: 'error',
+        message: error instanceof Error ? error.message : '获取活跃日期时间数据失败',
       };
     }
   }

@@ -8,6 +8,7 @@ import ChartContainer from '../components/ChartContainer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import MonthSelector from '../components/MonthSelector';
+import ActivityHeatmap from '../components/ActivityHeatmap';
 import { OpenDiggerAPI } from '../services/api';
 import {
   ProjectMeta,
@@ -16,7 +17,8 @@ import {
   StatCard as StatCardType,
   ChartDataPoint,
   LoadingState,
-  TimeSelector
+  TimeSelector,
+  ActiveDatesAndTimesData
 } from '../types';
 import {
   processTimeSeriesData,
@@ -33,7 +35,9 @@ const Home: React.FC = () => {
 
   const [activityData, setActivityData] = useState<StatisticsData>({});
   const [participantsData, setParticipantsData] = useState<StatisticsData>({});
+  const [activeDatesAndTimesData, setActiveDatesAndTimesData] = useState<ActiveDatesAndTimesData>({});
   const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: true });
+  const [heatmapLoadingState, setHeatmapLoadingState] = useState<LoadingState>({ isLoading: true });
   const [timeSelector, setTimeSelector] = useState<TimeSelector>({
     mode: 'range',
     range: 'monthly'
@@ -80,8 +84,32 @@ const Home: React.FC = () => {
   const [statCards, setStatCards] = useState<StatCardType[]>([]);
   const [trendChartData, setTrendChartData] = useState<ChartDataPoint[]>([]);
 
+  // 加载热力图数据
+  const loadHeatmapData = async () => {
+    setHeatmapLoadingState({ isLoading: true });
+
+    try {
+      const result = await OpenDiggerAPI.getActiveDatesAndTimesData();
+
+      if (result.status === 'success') {
+        setActiveDatesAndTimesData(result.data);
+      }
+
+      setHeatmapLoadingState({ isLoading: false });
+    } catch (error: Error | unknown) {
+      setHeatmapLoadingState({
+        isLoading: false,
+        error: {
+          code: 'FETCH_ERROR',
+          message: error instanceof Error ? error.message : '热力图数据加载失败'
+        }
+      });
+    }
+  };
+
   useEffect(() => {
     loadData();
+    loadHeatmapData();
   }, []);
 
   // 生成统计卡片数据
@@ -305,6 +333,15 @@ const Home: React.FC = () => {
           height={300}
           loading={loadingState.isLoading}
           error={loadingState.error?.message}
+        />
+      </div>
+
+      {/* 活跃时间热力图 */}
+      <div className="mb-8">
+        <ActivityHeatmap
+          data={activeDatesAndTimesData}
+          loading={heatmapLoadingState.isLoading}
+          error={heatmapLoadingState.error?.message}
         />
       </div>
 

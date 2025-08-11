@@ -184,3 +184,10 @@ export interface DataFilter {
   startDate?: string;
   endDate?: string;
 }
+
+// 活跃日期时间数据类型
+export interface ActiveDatesAndTimesData {
+  [timeKey: string]: {
+    [hour: string]: number;
+  } | number;
+}
