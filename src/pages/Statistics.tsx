@@ -67,7 +67,7 @@ const Statistics: React.FC = () => {
     range: 'monthly'
   });
   const [selectedCategory, setSelectedCategory] = useState<MetricCategory>('general');
-  const [selectedMetric, setSelectedMetric] = useState<string>('activity');
+  const [selectedMetric, setSelectedMetric] = useState<string>('openrank');
 
   // 指标配置
   const metricConfigs: MetricConfig[] = useMemo(() => [
@@ -235,6 +235,9 @@ const Statistics: React.FC = () => {
 
   // 状态管理：分类统计卡片数据
   const [currentCategoryCards, setCurrentCategoryCards] = useState<StatCardType[]>([]);
+  
+  // 状态管理：选中的卡片索引
+  const [selectedCardIndex, setSelectedCardIndex] = useState<number>(-1);
 
   // 生成分类统计卡片
   const generateCategoryStatCards = useCallback((category: MetricCategory): StatCardType[] => {
@@ -272,6 +275,8 @@ const Statistics: React.FC = () => {
     if (hasData) {
       const newCategoryCards = generateCategoryStatCards(selectedCategory);
       setCurrentCategoryCards(newCategoryCards);
+      // 重置选中的卡片索引
+      setSelectedCardIndex(-1);
     }
   }, [generateCategoryStatCards, selectedCategory, activityData, participantsData, issuesData]);
 
@@ -295,6 +300,16 @@ const Statistics: React.FC = () => {
       'change_request': <GitPullRequest className="w-5 h-5" />
     };
     return icons[category];
+  };
+
+  // 处理卡片点击事件
+  const handleCardClick = (cardIndex: number) => {
+    setSelectedCardIndex(cardIndex);
+    // 获取对应的指标配置
+    const categoryConfigs = metricConfigs.filter(config => config.category === selectedCategory);
+    if (categoryConfigs[cardIndex]) {
+      setSelectedMetric(categoryConfigs[cardIndex].key);
+    }
   };
 
   // 获取当前选中指标的数据
@@ -408,6 +423,8 @@ const Statistics: React.FC = () => {
               key={index} 
               data={card} 
               timeSelector={timeSelector}
+              onClick={() => handleCardClick(index)}
+              isSelected={selectedCardIndex === index}
             />
           ))}
         </div>
@@ -449,22 +466,7 @@ const Statistics: React.FC = () => {
         </div>
       </div>
 
-      {/* 详细指标说明 */}
-      <div className="mt-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">当前分类指标说明</h3>
-          <div className="space-y-4">
-            {metricConfigs.filter(config => config.category === selectedCategory).map(config => (
-              <div key={config.key} className="border-l-4 pl-4" style={{ borderColor: config.color }}>
-                <h4 className="font-medium text-gray-900 mb-1">{config.name}</h4>
-                <p className="text-sm text-gray-600">
-                  {getMetricDescription(config.key)?.description || '暂无说明'}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+
     </Layout>
   );
 };

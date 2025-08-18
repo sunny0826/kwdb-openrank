@@ -11,9 +11,11 @@ interface StatCardProps {
   variant?: 'default' | 'gradient' | 'minimal';
   loading?: boolean;
   timeSelector?: TimeSelector; // 新增：时间选择器状态
+  onClick?: () => void; // 新增：点击处理函数
+  isSelected?: boolean; // 新增：是否被选中状态
 }
 
-const StatCard: React.FC<StatCardProps> = ({ data, className = '', variant = 'default', loading = false, timeSelector }) => {
+const StatCard: React.FC<StatCardProps> = ({ data, className = '', variant = 'default', loading = false, timeSelector, onClick, isSelected = false }) => {
   const { title, value, change, trend, description } = data;
 
   const getTrendIcon = () => {
@@ -111,7 +113,12 @@ const StatCard: React.FC<StatCardProps> = ({ data, className = '', variant = 'de
   }
 
   return (
-    <div className={`${getCardStyles()} rounded-lg p-4 sm:p-6 transition-all duration-200 group relative overflow-hidden ${className}`}>
+    <div 
+      className={`${getCardStyles()} rounded-lg p-4 sm:p-6 transition-all duration-200 group relative overflow-hidden cursor-pointer transform hover:scale-105 ${
+        isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-lg'
+      } ${className}`}
+      onClick={onClick}
+    >
       {/* 标题和趋势图标 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
